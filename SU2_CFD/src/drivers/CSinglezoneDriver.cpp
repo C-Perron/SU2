@@ -328,3 +328,40 @@ void CSinglezoneDriver::Runtime_Options(){
 bool CSinglezoneDriver::GetTimeConvergence() const{
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
+
+void CSinglezoneDriver::RunNIter(unsigned long nIter) {
+
+  unsigned long Iter, Inner_Iter, nInner_Iter, OuterIter = 0;
+  bool StopCalc = false;
+
+  config_container[ZONE_0]->SetOuterIter(OuterIter);
+  Inner_Iter = config_container[MESH_0]->GetInnerIter();
+  nInner_Iter = config_container[MESH_0]->GetnInner_Iter();
+
+  for (Iter = 0; Iter < nIter; Iter++) {
+
+    config_container[ZONE_0]->SetInnerIter(Inner_Iter);
+
+    iteration_container[ZONE_0][INST_0]->Preprocess(output_container[ZONE_0], integration_container,
+          geometry_container, solver_container, numerics_container, config_container, surface_movement,
+          grid_movement, FFDBox, ZONE_0, INST_0);
+
+    iteration_container[ZONE_0][INST_0]->Iterate(output_container[ZONE_0], integration_container,
+          geometry_container, solver_container, numerics_container, config_container, surface_movement,
+          grid_movement, FFDBox, ZONE_0, INST_0);
+
+    StopCalc = iteration_container[ZONE_0][INST_0]->Monitor(output_container[ZONE_0], integration_container,
+          geometry_container, solver_container, numerics_container, config_container, surface_movement,
+          grid_movement, FFDBox, ZONE_0, INST_0);
+
+    iteration_container[ZONE_0][INST_0]->Output(output_container[ZONE_0], geometry_container, solver_container,
+    config_container, Inner_Iter, StopCalc, ZONE_0, INST_0);
+
+    Inner_Iter++;
+    if (StopCalc || (Inner_Iter >= nInner_Iter)) break;
+
+  }
+
+  config_container[ZONE_0]->SetInnerIter(Inner_Iter);
+
+}

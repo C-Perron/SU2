@@ -115,4 +115,9 @@ public:
    */
   virtual void Runtime_Options();
 
+  /*!
+   * \brief Run a fixed number of iterations for ZONE_0.
+   */
+  void RunNIter(unsigned long nIter);
+
 };
