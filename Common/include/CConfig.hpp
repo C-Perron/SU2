@@ -6965,7 +6965,7 @@ public:
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
-   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_marker - Index corresponding to the engine inflow boundary.
    * \return Target (pressure, massflow, etc) .
    */
   su2double GetEngineInflow_Target(string val_marker) const;
@@ -7102,6 +7102,13 @@ public:
    * \return Power.
    */
   su2double GetExhaust_Power(string val_marker) const;
+
+  /*!
+   * \brief Set the target (pressure, massflow, etc) at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \return Target (pressure, massflow, etc) .
+   */
+  void SetEngineInflow_Target(unsigned short val_index, su2double target) {EngineInflow_Target[val_index] = target; }
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

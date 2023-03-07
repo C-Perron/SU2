@@ -893,3 +893,61 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
   return FlowLoad_passive;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/* Functions added for more granular control */
+////////////////////////////////////////////////////////////////////////////////
+
+passivedouble CDriver::GetFarfield_AoA() const {
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetAoA());
+}
+
+void CDriver::SetFarfield_AoA(passivedouble alpha){
+
+  const su2double AoS = config_container[ZONE_0]->GetAoS()*PI_NUMBER/180.0;
+  su2double alpha_rad = alpha * PI_NUMBER/180.0;
+  su2double Vx, Vy, Vz, Vmag;
+
+  config_container[ZONE_0]->SetAoA(alpha);
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+
+  if (nDim == 2) {
+    Vx = solver->GetVelocity_Inf(0);
+    Vy = solver->GetVelocity_Inf(1);
+    Vmag = sqrt(Vx*Vx + Vy*Vy);
+
+    solver->SetVelocity_Inf(0, cos(alpha)*Vmag);
+    solver->SetVelocity_Inf(1, sin(alpha)*Vmag);
+  }
+  else {
+    Vx = solver->GetVelocity_Inf(0);
+    Vy = solver->GetVelocity_Inf(1);
+    Vz = solver->GetVelocity_Inf(2);
+    Vmag = sqrt(Vx*Vx + Vy*Vy + Vz*Vz);
+
+    solver->SetVelocity_Inf(0, cos(alpha)*cos(AoS)*Vmag);
+    solver->SetVelocity_Inf(1, sin(AoS)*Vmag);
+    solver->SetVelocity_Inf(2, sin(alpha)*cos(AoS)*Vmag);
+  }
+}
+
+passivedouble CDriver::GetEngineInflow_Target(string val_marker) const {
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetEngineInflow_Target(val_marker));
+}
+
+passivedouble CDriver::GetInflow_Mach(string val_marker) const {
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_Mach(val_marker));
+}
+
+passivedouble CDriver::GetInflow_Pressure(string val_marker) const {
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_Pressure(val_marker));
+}
+
+passivedouble CDriver::GetInflow_MassFlow(string val_marker) const {
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_MassFlow(val_marker));
+}
+
+void CDriver::SetEngineInflow_Target(unsigned short iMarker, passivedouble target) {
+  config_container[ZONE_0]->SetEngineInflow_Target(iMarker, (su2double) target);
+}

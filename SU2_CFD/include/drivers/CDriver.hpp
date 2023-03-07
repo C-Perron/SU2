@@ -788,6 +788,45 @@ public:
     }
   }
 
+////////////////////////////////////////////////////////////////////////////////
+/* Functions added for more granular control */
+////////////////////////////////////////////////////////////////////////////////
+  
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetFarfield_AoA() const;
+
+  /*!
+   * \brief TBD
+   */
+  void SetFarfield_AoA(passivedouble alpha);
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEngineInflow_Target(string val_marker) const;
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetInflow_Mach(string val_marker) const;
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetInflow_Pressure(string val_marker) const;
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetInflow_MassFlow(string val_marker) const;
+
+  /*!
+   * \brief TBD
+   */
+  void SetEngineInflow_Target(unsigned short iMarker, passivedouble target);
+
 };
 
 /*!
