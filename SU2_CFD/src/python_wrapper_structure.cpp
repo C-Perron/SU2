@@ -898,25 +898,26 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
 /* Functions added for more granular control */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetAoA(passivedouble alpha){
+void CDriver::SetAoA(passivedouble alpha_deg){
 
-  const su2double alpha_rad = alpha * PI_NUMBER/180.0;
-  const su2double AoS = config_container[ZONE_0]->GetAoS()*PI_NUMBER/180.0;
+  const su2double alpha_rad = alpha_deg * PI_NUMBER/180.0;
+  const su2double beta_rad = config_container[ZONE_0]->GetAoS()*PI_NUMBER/180.0;
 
   const su2double* V_inf = config_container[ZONE_0]->GetVelocity_FreeStreamND();
   const su2double Vmag = GeometryToolbox::Norm(nDim, V_inf);
 
   if (nDim == 2) {
-    config_container[ZONE_0]->SetVelocity_FreeStreamND(cos(alpha)*Vmag, 0);
-    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(alpha)*Vmag, 1);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(cos(alpha_rad)*Vmag, 0);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(alpha_rad)*Vmag, 1);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(0.0, 2);
   }
   else {
-    config_container[ZONE_0]->SetVelocity_FreeStreamND(cos(alpha)*cos(AoS)*Vmag, 0);
-    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(AoS)*Vmag, 1);
-    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(alpha)*cos(AoS)*Vmag, 2);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(cos(alpha_rad)*cos(beta_rad)*Vmag, 0);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(beta_rad)*Vmag, 1);
+    config_container[ZONE_0]->SetVelocity_FreeStreamND(sin(alpha_rad)*cos(beta_rad)*Vmag, 2);
   }
 
-  config_container[ZONE_0]->SetAoA(alpha);
+  config_container[ZONE_0]->SetAoA(alpha_deg);
 }
 
 passivedouble CDriver::GetMarkerCL_Inv(unsigned short iMarker) const {
