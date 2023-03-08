@@ -791,41 +791,202 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 /* Functions added for more granular control */
 ////////////////////////////////////////////////////////////////////////////////
-  
-  /*!
-   * \brief TBD
-   */
-  passivedouble GetFarfield_AoA() const;
+
+  /* ---------- Farfield/Freestream Conditions ---------- */
 
   /*!
    * \brief TBD
    */
-  void SetFarfield_AoA(passivedouble alpha);
+  passivedouble GetAoA() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetAoA());
+  }
 
   /*!
    * \brief TBD
    */
-  passivedouble GetEngineInflow_Target(string val_marker) const;
+  void SetAoA(passivedouble alpha);
 
   /*!
    * \brief TBD
    */
-  passivedouble GetInflow_Mach(string val_marker) const;
+  passivedouble GetMach() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetMach());
+  }
 
   /*!
    * \brief TBD
    */
-  passivedouble GetInflow_Pressure(string val_marker) const;
+  passivedouble GetReynolds() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetReynolds());
+  }
 
   /*!
    * \brief TBD
    */
-  passivedouble GetInflow_MassFlow(string val_marker) const;
+  passivedouble GetVelocity_FreeStreamND(unsigned short dim) const {
+    if (dim > 3) {
+      SU2_MPI::Error("Out-of-bounds index for farfield velocity vector.", CURRENT_FUNCTION);
+    }
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetVelocity_FreeStreamND()[dim]);
+  }
 
   /*!
    * \brief TBD
    */
-  void SetEngineInflow_Target(unsigned short iMarker, passivedouble target);
+  passivedouble GetPressure_FreeStreamND() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetPressure_FreeStreamND());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetTemperature_FreeStreamND() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTemperature_FreeStreamND());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetDensity_FreeStreamND() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetDensity_FreeStreamND());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEnergy_FreeStreamND() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetEnergy_FreeStreamND());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetViscosity_FreeStreamND() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetViscosity_FreeStreamND());
+  }
+
+  /* ---------- Reference Quantities ---------- */
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetVelocity_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetVelocity_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetPressure_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetPressure_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetTemperature_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTemperature_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetDensity_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetDensity_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetViscosity_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetViscosity_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEnergy_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetEnergy_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetForce_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetForce_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetLength_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetLength_Ref());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetArea_Ref() const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetAeroForce_Ref() const {
+    return SU2_TYPE::GetValue(
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetAeroCoeffsReferenceForce()
+    );
+  }
+
+  /* ---------- Aero Forces/Moments ---------- */
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetMarkerCL_Inv(unsigned short iMarker) const;
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetMarkerCD_Inv(unsigned short iMarker) const;
+
+  /* ---------- Engine Inflow ---------- */
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEngineInflow_Target(string val_marker) const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetEngineInflow_Target(val_marker));
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEngineInflow_Mach(string val_marker) const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_Mach(val_marker));
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEngineInflow_Pressure(string val_marker) const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_Pressure(val_marker));
+  }
+
+  /*!
+   * \brief TBD
+   */
+  passivedouble GetEngineInflow_MassFlow(string val_marker) const {
+    return SU2_TYPE::GetValue(config_container[ZONE_0]->GetInflow_MassFlow(val_marker));
+  }
+
+  /*!
+   * \brief TBD
+   */
+  void SetEngineInflow_Target(unsigned short iMarker, passivedouble target) {
+    config_container[ZONE_0]->SetEngineInflow_Target(iMarker, target);
+  }
 
 };
 
