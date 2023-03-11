@@ -898,7 +898,7 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
 /* Functions added for more granular control */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetAoA(passivedouble alpha_deg){
+void CDriver::SetFarfield_AoA(passivedouble alpha_deg){
 
   const su2double alpha_rad = alpha_deg * PI_NUMBER/180.0;
   const su2double beta_rad = config_container[ZONE_0]->GetAoS()*PI_NUMBER/180.0;
