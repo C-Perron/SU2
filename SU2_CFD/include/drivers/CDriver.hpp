@@ -792,12 +792,18 @@ public:
 /* Functions added for more granular control */
 ////////////////////////////////////////////////////////////////////////////////
 
-
   /*!
    * \brief TBD
    */
   CConfig* GetConfig(unsigned short iZone) {
     return config_container[iZone];
+  }
+
+  /*!
+   * \brief TBD
+   */
+  CSolver* GetSolver(unsigned short iZone, unsigned short iSolution) {
+    return solver_container[iZone][INST_0][MESH_0][iSolution];
   }
 
   /* ---------- Farfield/Freestream Conditions ---------- */
@@ -806,27 +812,6 @@ public:
    * \brief TBD
    */
   void SetFarfield_AoA(passivedouble alpha);  
-
-  /* ---------- Aero Forces/Moments ---------- */
-
-  /*!
-   * \brief TBD
-   */
-  passivedouble GetAeroForce_Ref() const {
-    return SU2_TYPE::GetValue(
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetAeroCoeffsReferenceForce()
-    );
-  }
-  
-  /*!
-   * \brief TBD
-   */
-  passivedouble GetMarkerCL_Inv(unsigned short iMarker) const;
-
-  /*!
-   * \brief TBD
-   */
-  passivedouble GetMarkerCD_Inv(unsigned short iMarker) const;
 
 };
 

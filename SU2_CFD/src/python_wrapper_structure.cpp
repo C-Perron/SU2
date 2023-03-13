@@ -919,15 +919,3 @@ void CDriver::SetFarfield_AoA(passivedouble alpha_deg){
 
   config_container[ZONE_0]->SetAoA(alpha_deg);
 }
-
-passivedouble CDriver::GetMarkerCL_Inv(unsigned short iMarker) const {
-  su2double marker_cl;
-  marker_cl = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetCL_Inv(iMarker);
-  return SU2_TYPE::GetValue(marker_cl);
-}
-
-passivedouble CDriver::GetMarkerCD_Inv(unsigned short iMarker) const {
-  su2double marker_cd;
-  marker_cd = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetCD_Inv(iMarker);
-  return SU2_TYPE::GetValue(marker_cd);
-}
