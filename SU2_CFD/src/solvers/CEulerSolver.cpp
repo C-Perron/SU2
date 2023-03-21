@@ -2530,21 +2530,26 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
   unsigned short iDim, iMarker, jMarker;
   unsigned long iVertex, iPoint;
-  su2double  *V_inlet = nullptr, *V_outlet = nullptr, Pressure, Temperature, Velocity[3], Vn,
-  Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
+  su2double  *Normal = nullptr, Pressure, Temperature, Velocity[3],
+  Velocity2, Density, Area, SoundSpeed, TotalPressure, RamDrag,
   TotalTemperature, VelocityJet,
-  Vel_Infty, MaxPressure, MinPressure, MFR, InfVel2;
+  MaxPressure, MinPressure, MFR, InfVel2;
   unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   su2double DeltaPress = 0.0, DeltaTemp = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0,
   NetThrust = 0.0, GrossThrust = 0.0, Power = 0.0, MassFlow = 0.0, Mach = 0.0, Force = 0.0;
-  bool ReverseFlow, Engine = false, Pair = true;
-  su2double Vector[MAXNDIM] = {0.0};
+  bool ReverseFlow, Engine = false, Pair = true, axisymmetric = config->GetAxisymmetric();
 
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = Gas_Constant*Gamma / (Gamma-1.0);
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
+  su2double Vel_Infty2 = 0.0; 
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
+  }
+  su2double Vel_Infty = sqrt(Vel_Infty2);
+
   bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
   bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
@@ -2601,33 +2606,41 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
           if (geometry->nodes->GetDomain(iPoint)) {
 
-            V_inlet = nodes->GetPrimitive(iPoint);
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+            /*--- Axisymmetric simulations ---*/
 
-            Temperature = V_inlet[0];
-            Pressure = V_inlet[nDim+1];
-
-            Density = V_inlet[nDim+2];
-            SoundSpeed = sqrt(Gamma*Pressure/Density);
-
-            Velocity2 = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
+            Temperature = nodes->GetTemperature(iPoint);
+            Pressure = nodes->GetPressure(iPoint);
+            Density = nodes->GetDensity(iPoint);
+            SoundSpeed = nodes->GetSoundSpeed(iPoint);
+            
+            Velocity2 = 0.0; MassFlow = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity[iDim] = V_inlet[iDim+1];
-              Velocity2 += Velocity[iDim]*Velocity[iDim];
-              Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
-              MassFlow -= Vector[iDim]*Velocity[iDim]*Density;
+              Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow -= Normal[iDim] * Velocity[iDim] * Density;
             }
 
-            Area = GeometryToolbox::Norm(nDim, Vector);
-            Vn = 0.0; ReverseFlow = false;
-            for (iDim = 0; iDim < nDim; iDim++) {  Vn -= Velocity[iDim]*Vector[iDim]/Area; }
-            if (Vn < 0.0) { ReverseFlow = true; }
+            Mach = sqrt(Velocity2) / SoundSpeed;
+            Area = GeometryToolbox::Norm(nDim, Normal);
+            if ( MassFlow < 0.0) ReverseFlow = true; else ReverseFlow = false;
 
-            Vel_Infty = sqrt (Vel_Infty2);
-            Mach = sqrt(Velocity2)/SoundSpeed;
-            TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+            su2double Force[MAXNDIM] = {0.0};
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim] + MassFlow*Velocity[iDim];
+            }
+
+            if (axisymmetric) {
+              su2double AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+              MassFlow *= AxiFactor;
+              Area *= AxiFactor;
+              Force[0] *= AxiFactor;
+              Force[1] = 0.0;
+            }
+
+            TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * Gamma_Minus_One, Gamma / Gamma_Minus_One);
+            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * Gamma_Minus_One);
             MinPressure = min(MinPressure, TotalPressure);
             MaxPressure = max(MaxPressure, TotalPressure);
 
@@ -2643,19 +2656,21 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Inlet_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
             Inlet_Area[iMarker]             += Area;
             Inlet_RamDrag[iMarker]          += RamDrag;
-            Inlet_Power[iMarker] += MassFlow*Cp*TotalTemperature;
-            if (ReverseFlow) Inlet_ReverseMassFlow[iMarker]  += MassFlow;
+            Inlet_Power[iMarker]            += MassFlow*Cp*TotalTemperature;
+            if (ReverseFlow)
+              Inlet_ReverseMassFlow[iMarker]  += MassFlow;
 
-            su2double Inlet_ForceX = -(Pressure - Pressure_Inf)*Vector[0] + MassFlow*Velocity[0];
-            su2double Inlet_ForceY = -(Pressure - Pressure_Inf)*Vector[1] + MassFlow*Velocity[1];
-            su2double Inlet_ForceZ = 0.0;
-            if (nDim == 3) Inlet_ForceZ = -(Pressure - Pressure_Inf)*Vector[2] + MassFlow*Velocity[2];
-            Inlet_Force[iMarker] +=  Inlet_ForceX*cos(Alpha)*cos(Beta) + Inlet_ForceY*sin(Beta) +Inlet_ForceZ*sin(Alpha)*cos(Beta);
-
-            Inlet_XCG[iMarker] += geometry->nodes->GetCoord(iPoint, 0)*Area;
-            Inlet_YCG[iMarker] += geometry->nodes->GetCoord(iPoint, 1)*Area;
-            if (nDim == 3) Inlet_ZCG[iMarker] += geometry->nodes->GetCoord(iPoint, 2)*Area;
-
+            if (nDim == 3) {
+              Inlet_Force[iMarker] += Force[0]*cos(Alpha)*cos(Beta) + Force[1]*sin(Beta) + Force[2]*sin(Alpha)*cos(Beta);
+              Inlet_XCG[iMarker] += geometry->nodes->GetCoord(iPoint, 0)*Area;
+              Inlet_YCG[iMarker] += geometry->nodes->GetCoord(iPoint, 1)*Area;
+              Inlet_ZCG[iMarker] += geometry->nodes->GetCoord(iPoint, 2)*Area;
+            }
+            else {
+              Inlet_Force[iMarker] += Force[0]*cos(Alpha) + Force[1]*sin(Alpha);
+              Inlet_XCG[iMarker] += geometry->nodes->GetCoord(iPoint, 0)*Area;
+              Inlet_YCG[iMarker] += geometry->nodes->GetCoord(iPoint, 1)*Area;
+            }
           }
         }
 
@@ -2670,30 +2685,40 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
           if (geometry->nodes->GetDomain(iPoint)) {
 
-            V_outlet = nodes->GetPrimitive(iPoint);
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+            /*--- Axisymmetric simulations ---*/
 
-            Temperature = V_outlet[0];
-            Pressure = V_outlet[nDim+1];
-
-            Density = V_outlet[nDim+2];
-            SoundSpeed  = sqrt(Gamma*Pressure/Density);
-
-            Velocity2 = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            Temperature = nodes->GetTemperature(iPoint);
+            Pressure = nodes->GetPressure(iPoint);
+            Density = nodes->GetDensity(iPoint);
+            SoundSpeed = nodes->GetSoundSpeed(iPoint);
+            
+            Velocity2 = 0.0; MassFlow = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity[iDim] = V_outlet[iDim+1];
-              Velocity2 += Velocity[iDim]*Velocity[iDim];
-              Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
-              MassFlow += Vector[iDim]*Velocity[iDim]*Density;
+              Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow += Normal[iDim] * Velocity[iDim] * Density;
             }
 
-            Vel_Infty = sqrt (Vel_Infty2);
-            Area = GeometryToolbox::Norm(nDim, Vector);
-            Mach = sqrt(Velocity2)/SoundSpeed;
-            TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
-            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            VelocityJet = sqrt(Velocity2) ;
+            VelocityJet = sqrt(Velocity2);
+            Mach = VelocityJet / SoundSpeed;
+            Area = GeometryToolbox::Norm(nDim, Normal);
+            TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * Gamma_Minus_One, Gamma / Gamma_Minus_One);
+            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * Gamma_Minus_One);
+
+            su2double Force[MAXNDIM] = {0.0};
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim] - MassFlow*Velocity[iDim];
+            }
+
+            if (axisymmetric) {
+              su2double AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+              MassFlow *= AxiFactor;
+              Area *= AxiFactor;
+              Force[0] *= AxiFactor;
+              Force[1] = 0.0;
+            }
 
             GrossThrust = MassFlow * VelocityJet;
 
@@ -2706,14 +2731,10 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Outlet_GrossThrust[iMarker] += GrossThrust;
             Outlet_Power[iMarker] += MassFlow*Cp*TotalTemperature;
 
-            su2double Outlet_ForceX = -(Pressure - Pressure_Inf)*Vector[0] -MassFlow*Velocity[0];
-            su2double Outlet_ForceY = -(Pressure - Pressure_Inf)*Vector[1] -MassFlow*Velocity[1];
-            su2double Outlet_ForceZ = 0.0;
-            if (nDim == 3) Outlet_ForceZ = -(Pressure - Pressure_Inf)*Vector[2] -MassFlow*Velocity[2];
-
-            if (nDim == 2) Outlet_Force[iMarker] +=  Outlet_ForceX*cos(Alpha) + Outlet_ForceY*sin(Alpha);
-            if (nDim == 3) Outlet_Force[iMarker] +=  Outlet_ForceX*cos(Alpha)*cos(Beta) + Outlet_ForceY*sin(Beta) + Outlet_ForceZ*sin(Alpha)*cos(Beta);
-
+            if (nDim == 3)
+              Outlet_Force[iMarker] += Force[0]*cos(Alpha)*cos(Beta) + Force[1]*sin(Beta) + Force[2]*sin(Alpha)*cos(Beta);
+            else
+              Outlet_Force[iMarker] += Force[0]*cos(Alpha) + Force[1]*sin(Alpha);
           }
         }
 
@@ -2913,6 +2934,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
           config->SetInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
           config->SetInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetInflow_Area(iMarker_Inlet, Inlet_Area_Total[iMarker_Inlet]);
         }
         else {
           config->SetActDiskInlet_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
@@ -2955,6 +2977,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetExhaust_GrossThrust(iMarker_Outlet, Outlet_GrossThrust_Total[iMarker_Outlet]);
           config->SetExhaust_Force(iMarker_Outlet, Outlet_Force_Total[iMarker_Outlet]);
           config->SetExhaust_Power(iMarker_Outlet, Outlet_Power_Total[iMarker_Outlet]);
+          config->SetExhaust_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
         }
         else {
           config->SetActDiskOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);

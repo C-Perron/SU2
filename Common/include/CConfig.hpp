@@ -299,6 +299,7 @@ private:
   su2double *Inflow_RamDrag;                 /*!< \brief Specified fan face ram drag for nacelle boundaries. */
   su2double *Inflow_Force;                   /*!< \brief Specified force for nacelle boundaries. */
   su2double *Inflow_Power;                   /*!< \brief Specified power for nacelle boundaries. */
+  su2double *Inflow_Area;                    /*!< \brief Specified power for nacelle boundaries. */
   su2double *Exhaust_Pressure;               /*!< \brief Specified exhaust pressure for nacelle boundaries. */
   su2double *Exhaust_Temperature;            /*!< \brief Specified exhaust temperature for nacelle boundaries. */
   su2double *Exhaust_MassFlow;               /*!< \brief Specified exhaust mass flow for nacelle boundaries. */
@@ -307,6 +308,7 @@ private:
   su2double *Exhaust_GrossThrust;            /*!< \brief Specified exhaust gross thrust for nacelle boundaries. */
   su2double *Exhaust_Force;                  /*!< \brief Specified exhaust force for nacelle boundaries. */
   su2double *Exhaust_Power;                  /*!< \brief Specified exhaust power for nacelle boundaries. */
+  su2double *Exhaust_Area;                   /*!< \brief Specified exhaust power for nacelle boundaries. */
   su2double *Engine_Power;                   /*!< \brief Specified engine power for nacelle boundaries. */
   su2double *Engine_Mach;                    /*!< \brief Specified engine mach for nacelle boundaries. */
   su2double *Engine_Force;                   /*!< \brief Specified engine force for nacelle boundaries. */
@@ -7048,6 +7050,13 @@ public:
   su2double GetInflow_Power(string val_marker) const;
 
   /*!
+   * \brief Get the area at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow power.
+   */
+  su2double GetInflow_Area(string val_marker) const;
+
+  /*!
    * \brief Get the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust pressure.
@@ -7102,6 +7111,13 @@ public:
    * \return Power.
    */
   su2double GetExhaust_Power(string val_marker) const;
+
+  /*!
+   * \brief Get the area at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return Power.
+   */
+  su2double GetExhaust_Area(string val_marker) const;
 
   /*!
    * \brief Set the target (pressure, massflow, etc) at an engine inflow boundary.
@@ -7181,6 +7197,13 @@ public:
   void SetInflow_Power(unsigned short val_marker, su2double val_fanface_power) { Inflow_Power[val_marker] = val_fanface_power; }
 
   /*!
+   * \brief Set the area at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_force - Power.
+   */
+  void SetInflow_Area(unsigned short val_marker, su2double val_fanface_area) { Inflow_Area[val_marker] = val_fanface_area; }
+
+  /*!
    * \brief Set the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_pressure - Exhaust static pressure.
@@ -7235,6 +7258,13 @@ public:
    * \param[in] val_exhaust_power - Exhaust power.
    */
   void SetExhaust_Power(unsigned short val_marker, su2double val_exhaust_power) { Exhaust_Power[val_marker] = val_exhaust_power; }
+
+  /*!
+   * \brief Set the area at an engine exhaust boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_exhaust_power - Exhaust power.
+   */
+  void SetExhaust_Area(unsigned short val_marker, su2double val_exhaust_area) { Exhaust_Area[val_marker] = val_exhaust_area; }
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.

@@ -881,10 +881,10 @@ void CConfig::SetPointersNull(void) {
   Inflow_Pressure      = nullptr;    Inflow_MassFlow    = nullptr;    Inflow_ReverseMassFlow  = nullptr;
   Inflow_TotalPressure = nullptr;    Inflow_Temperature = nullptr;    Inflow_TotalTemperature = nullptr;
   Inflow_RamDrag       = nullptr;    Inflow_Force       = nullptr;    Inflow_Power            = nullptr;
-  Inflow_Mach          = nullptr;
+  Inflow_Mach          = nullptr;    Inflow_Area        = nullptr;
 
   Exhaust_Pressure        = nullptr;   Exhaust_Temperature        = nullptr;    Exhaust_MassFlow = nullptr;
-  Exhaust_TotalPressure   = nullptr;   Exhaust_TotalTemperature   = nullptr;
+  Exhaust_TotalPressure   = nullptr;   Exhaust_TotalTemperature   = nullptr;    Exhaust_Area     = nullptr;
   Exhaust_GrossThrust     = nullptr;   Exhaust_Force              = nullptr;
   Exhaust_Power           = nullptr;   Exhaust_Temperature_Target = nullptr;
   Exhaust_Pressure_Target = nullptr;
@@ -5668,6 +5668,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Inflow_RamDrag = new su2double[nMarker_EngineInflow] ();
   Inflow_Force = new su2double[nMarker_EngineInflow] ();
   Inflow_Power = new su2double[nMarker_EngineInflow] ();
+  Inflow_Area = new su2double[nMarker_EngineInflow] ();
 
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineInflow[iMarker_EngineInflow];
@@ -5683,6 +5684,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust] ();
   Exhaust_Force = new su2double[nMarker_EngineExhaust] ();
   Exhaust_Power = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Area = new su2double[nMarker_EngineExhaust] ();
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineExhaust[iMarker_EngineExhaust];
@@ -7968,6 +7970,7 @@ CConfig::~CConfig() {
   delete[] Exhaust_GrossThrust;
   delete[] Exhaust_Force;
   delete[] Exhaust_Power;
+  delete[] Exhaust_Area;
 
   delete[] Inflow_Mach;
   delete[] Inflow_Pressure;
@@ -7979,6 +7982,7 @@ CConfig::~CConfig() {
   delete[] Inflow_RamDrag;
   delete[] Inflow_Force;
   delete[] Inflow_Power;
+  delete[] Inflow_Area;
 
   delete[] Engine_Power;
   delete[] Engine_Mach;
@@ -9246,6 +9250,13 @@ su2double CConfig::GetInflow_Power(string val_marker) const {
   return Inflow_Power[iMarker_EngineInflow];
 }
 
+su2double CConfig::GetInflow_Area(string val_marker) const {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Area[iMarker_EngineInflow];
+}
+
 su2double CConfig::GetInflow_Mach(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
@@ -9307,6 +9318,13 @@ su2double CConfig::GetExhaust_Power(string val_marker) const {
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Power[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_Area(string val_marker) const {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Area[iMarker_EngineExhaust];
 }
 
 su2double CConfig::GetActDiskInlet_Pressure(string val_marker) const {
