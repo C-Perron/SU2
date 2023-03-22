@@ -75,6 +75,12 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   Sens_Geo.resize(config->GetnMarker_Monitoring(), 0.0);
 
+  /*--- Sensitivity arrays for Engine BC ---*/
+
+  EngineInflow_Target.resize(config->GetnMarker_EngineInflow());
+  Exhaust_Temperature_Target.resize(config->GetnMarker_EngineExhaust());
+  Exhaust_Pressure_Target.resize(config->GetnMarker_EngineExhaust());
+
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
   if (nVar > MAXNVAR) {

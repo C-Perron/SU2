@@ -6648,6 +6648,13 @@ public:
    * \return The total temperature.
    */
   su2double GetExhaust_Temperature_Target(string val_index) const;
+  
+  /*!
+   * \brief Get the total temperature at a nacelle boundary.
+   * \param[in] iMarker - Index corresponding to the inlet boundary.
+   * \return The total temperature.
+   */
+  su2double GetExhaust_Temperature_Target(unsigned short iMarker) const { Exhaust_Temperature_Target[iMarker]; }
 
   /*!
    * \brief Get the total temperature at an inlet boundary.
@@ -6725,6 +6732,13 @@ public:
    * \return The total pressure.
    */
   su2double GetExhaust_Pressure_Target(string val_index) const;
+
+  /*!
+   * \brief Get the total pressure at an nacelle boundary.
+   * \param[in] iMarker - Index corresponding to the inlet boundary.
+   * \return The total pressure.
+   */
+  su2double GetExhaust_Pressure_Target(unsigned short iMarker) const { Exhaust_Pressure_Target[iMarker]; }
 
   /*!
    * \brief Value of the CFL reduction in turbulence problems.
@@ -6971,6 +6985,13 @@ public:
    * \return Target (pressure, massflow, etc) .
    */
   su2double GetEngineInflow_Target(string val_marker) const;
+  
+  /*!
+   * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Target (pressure, massflow, etc) .
+   */
+  su2double GetEngineInflow_Target(unsigned short iMarker) const { return EngineInflow_Target[iMarker]; }
 
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
