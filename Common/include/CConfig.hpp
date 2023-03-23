@@ -6654,7 +6654,7 @@ public:
    * \param[in] iMarker - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_Temperature_Target(unsigned short iMarker) const { Exhaust_Temperature_Target[iMarker]; }
+  su2double GetExhaust_Temperature_Target(unsigned short iMarker) const { return Exhaust_Temperature_Target[iMarker]; }
 
   /*!
    * \brief Get the total temperature at an inlet boundary.
@@ -6738,7 +6738,7 @@ public:
    * \param[in] iMarker - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetExhaust_Pressure_Target(unsigned short iMarker) const { Exhaust_Pressure_Target[iMarker]; }
+  su2double GetExhaust_Pressure_Target(unsigned short iMarker) const { return Exhaust_Pressure_Target[iMarker]; }
 
   /*!
    * \brief Value of the CFL reduction in turbulence problems.
@@ -7232,11 +7232,25 @@ public:
   void SetExhaust_Pressure(unsigned short val_marker, su2double val_exhaust_pressure) { Exhaust_Pressure[val_marker] = val_exhaust_pressure; }
 
   /*!
+   * \brief Set the target pressure (total) at an engine exhaust boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_exhaust_pressure - Exhaust total pressure.
+   */
+  void SetExhaust_Pressure_Target(unsigned short val_marker, su2double target) { Exhaust_Pressure_Target[val_marker] = target; }
+
+  /*!
    * \brief Set the temperature (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_temp - Exhaust static temperature.
    */
   void SetExhaust_Temperature(unsigned short val_marker, su2double val_exhaust_temp) { Exhaust_Temperature[val_marker] = val_exhaust_temp; }
+
+  /*!
+   * \brief Set the target temperature (total) at an engine exhaust boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_exhaust_temp - Exhaust total temperature.
+   */
+  void SetExhaust_Temperature_Target(unsigned short val_marker, su2double target) { Exhaust_Temperature_Target[val_marker] = target; }
 
   /*!
    * \brief Set the back pressure (static) at an engine exhaust boundary.
