@@ -5194,6 +5194,12 @@ public:
   unsigned short GetKind_Engine_Inflow(void) const { return Kind_Engine_Inflow; }
 
   /*!
+   * \brief Set the kind of engine inlet boundary condition treatment.
+   * \return Kind of engine inlet boundary condition.
+   */
+  void SetKind_Engine_Inflow(unsigned short kind_inflow) { Kind_Engine_Inflow = kind_inflow; }
+
+  /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
    * \return Kind of inlet boundary condition.
    */
