@@ -3099,6 +3099,27 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine inflow target sensitivity.
+   */
+  inline virtual su2double GetTotal_Sens_EngineInflow_Target(unsigned short iMarker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine exhaust target temperature sensitivity.
+   */
+  inline virtual su2double GetTotal_Sens_Exhaust_Temperature_Target(unsigned short iMarker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine exhaust target pressure sensitivity.
+   */
+  inline virtual su2double GetTotal_Sens_Exhaust_Pressure_Target(unsigned short iMarker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the density at the infinity.
    */
   inline virtual su2double GetDensity_Inf(void) const { return 0; }
