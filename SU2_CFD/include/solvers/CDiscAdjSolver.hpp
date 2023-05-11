@@ -60,6 +60,13 @@ protected:
   su2double Mach, Alpha, Beta, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
 
+  vector<su2double> Total_Sens_EngineInflow_Target;
+  vector<su2double> Total_Sens_Exhaust_Temperature_Target;
+  vector<su2double> Total_Sens_Exhaust_Pressure_Target;
+  vector<su2double> EngineInflow_Target;
+  vector<su2double> Exhaust_Temperature_Target;
+  vector<su2double> Exhaust_Pressure_Target;
+
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
@@ -191,6 +198,33 @@ public:
    * \return Value of the velocity magnitude sensitivity.
    */
   inline su2double GetTotal_Sens_ModVel() const override { return Total_Sens_ModVel; }
+
+  /*!
+   * \brief Get the total engine inflow target sensitivity coefficient.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine inflow target sensitivity.
+   */
+  inline su2double GetTotal_Sens_EngineInflow_Target(unsigned short iMarker) const override {
+    return Total_Sens_EngineInflow_Target[iMarker];
+  }
+
+  /*!
+   * \brief Get the total engine exhaust target temperature sensitivity coefficient.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine exhaust target temperature sensitivity.
+   */
+  inline su2double GetTotal_Sens_Exhaust_Temperature_Target(unsigned short iMarker) const override {
+    return Total_Sens_Exhaust_Temperature_Target[iMarker];
+  }
+
+  /*!
+   * \brief Get the total engine exhaust target pressure sensitivity coefficient.
+   * \param[in] iMarker - Index corresponding to the engine inflow boundary.
+   * \return Value of the engine exhaust target pressure sensitivity.
+   */
+  inline su2double GetTotal_Sens_Exhaust_Pressure_Target(unsigned short iMarker) const override {
+    return Total_Sens_Exhaust_Pressure_Target[iMarker];
+  }
 
   /*!
    * \brief Get the shape sensitivity coefficient.
