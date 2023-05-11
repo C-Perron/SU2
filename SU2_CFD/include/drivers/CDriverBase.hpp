@@ -751,7 +751,21 @@ class CDriverBase {
     }
   }
 
-/// \}
+  ////////////////////////////////////////////////////////////////////////////////
+  /* Functions added for more granular control */
+  ////////////////////////////////////////////////////////////////////////////////
+
+  /*!
+   * \brief TBD
+   */
+  CConfig* GetConfig(unsigned short iZone) { return config_container[iZone]; }
+
+  /*!
+   * \brief TBD
+   */
+  CSolver* GetSolver(unsigned short iZone, unsigned short iSolution) {
+    return solver_container[iZone][INST_0][MESH_0][iSolution];
+  }
 
  protected:
   /*!

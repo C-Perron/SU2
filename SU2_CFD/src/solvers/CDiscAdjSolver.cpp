@@ -75,6 +75,16 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   Sens_Geo.resize(config->GetnMarker_Monitoring(), 0.0);
 
+  /*--- Sensitivity arrays for Engine BC ---*/
+
+  Total_Sens_EngineInflow_Target.resize(config->GetnMarker_EngineInflow(), 0.0);
+  EngineInflow_Target.resize(config->GetnMarker_EngineInflow(), 0.0);
+
+  Total_Sens_Exhaust_Temperature_Target.resize(config->GetnMarker_EngineExhaust(), 0.0);
+  Total_Sens_Exhaust_Pressure_Target.resize(config->GetnMarker_EngineExhaust(), 0.0);
+  Exhaust_Temperature_Target.resize(config->GetnMarker_EngineExhaust(), 0.0);
+  Exhaust_Pressure_Target.resize(config->GetnMarker_EngineExhaust(), 0.0);
+
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
   if (nVar > MAXNVAR) {
@@ -291,6 +301,30 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
 
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (config->GetnMarker_EngineInflow() > 0)) {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_EngineInflow(); iMarker++) {
+      EngineInflow_Target[iMarker] = config->GetEngineInflow_Target(iMarker);
+
+      if (!reset) AD::RegisterInput(EngineInflow_Target[iMarker]);
+
+      config->SetEngineInflow_Target(iMarker, EngineInflow_Target[iMarker]);
+    }
+  }
+
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (config->GetnMarker_EngineExhaust() > 0)) {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_EngineExhaust(); iMarker++) {
+      Exhaust_Temperature_Target[iMarker] = config->GetExhaust_Temperature_Target(iMarker);
+      Exhaust_Pressure_Target[iMarker] = config->GetExhaust_Pressure_Target(iMarker);
+
+      if (!reset) {
+        AD::RegisterInput(Exhaust_Temperature_Target[iMarker]);
+        AD::RegisterInput(Exhaust_Pressure_Target[iMarker]);
+      }
+
+      config->SetExhaust_Temperature_Target(iMarker, Exhaust_Temperature_Target[iMarker]);
+      config->SetExhaust_Pressure_Target(iMarker, Exhaust_Pressure_Target[iMarker]);
+    }
+  }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -455,6 +489,32 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (config->GetnMarker_EngineInflow() > 0)) {
+    vector<su2double> Local_Sens_EngineInflow_Target;
+    Local_Sens_EngineInflow_Target.reserve(EngineInflow_Target.size());
+
+    for (auto const& Target : EngineInflow_Target)
+      Local_Sens_EngineInflow_Target.push_back(SU2_TYPE::GetDerivative(Target));
+
+    SU2_MPI::Allreduce(Local_Sens_EngineInflow_Target.data(), Total_Sens_EngineInflow_Target.data(),
+                       Total_Sens_EngineInflow_Target.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  }
+
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (config->GetnMarker_EngineExhaust() > 0)) {
+    vector<su2double> Local_Sens_Exhaust_Temperature_Target, Local_Sens_Exhaust_Pressure_Target;
+    Local_Sens_Exhaust_Temperature_Target.reserve(Exhaust_Temperature_Target.size());
+    Local_Sens_Exhaust_Pressure_Target.reserve(Exhaust_Pressure_Target.size());
+
+    for (unsigned int iMarker; iMarker < config->GetnMarker_EngineExhaust(); iMarker++) {
+      Local_Sens_Exhaust_Temperature_Target[iMarker] = SU2_TYPE::GetDerivative(Exhaust_Temperature_Target[iMarker]);
+      Local_Sens_Exhaust_Pressure_Target[iMarker] = SU2_TYPE::GetDerivative(Exhaust_Pressure_Target[iMarker]);
+    }
+
+    SU2_MPI::Allreduce(Local_Sens_Exhaust_Temperature_Target.data(), Total_Sens_Exhaust_Temperature_Target.data(),
+                       Total_Sens_Exhaust_Temperature_Target.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Exhaust_Pressure_Target.data(), Total_Sens_Exhaust_Pressure_Target.data(),
+                       Total_Sens_Exhaust_Pressure_Target.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
