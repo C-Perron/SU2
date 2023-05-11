@@ -8811,11 +8811,25 @@ su2double CConfig::GetExhaust_Temperature_Target(const string& val_marker) const
   return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
+void CConfig::SetExhaust_Temperature_Target(const string& val_marker, su2double target) const {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  Exhaust_Temperature_Target[iMarker_EngineExhaust] = target;
+}
+
 su2double CConfig::GetExhaust_Pressure_Target(const string& val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
+}
+
+void CConfig::SetExhaust_Pressure_Target(const string& val_marker, su2double target) const {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  Exhaust_Pressure_Target[iMarker_EngineExhaust] = target;
 }
 
 INLET_TYPE CConfig::GetKind_Inc_Inlet(const string& val_marker) const {
@@ -9252,6 +9266,13 @@ su2double CConfig::GetEngineInflow_Target(const string& val_marker) const {
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return EngineInflow_Target[iMarker_EngineInflow];
+}
+
+void CConfig::SetEngineInflow_Target(const string& val_marker, su2double target) const {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  EngineInflow_Target[iMarker_EngineInflow] = target;
 }
 
 su2double CConfig::GetInflow_Pressure(const string& val_marker) const {

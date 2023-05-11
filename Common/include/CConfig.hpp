@@ -5286,6 +5286,12 @@ public:
   unsigned short GetKind_Engine_Inflow(void) const { return Kind_Engine_Inflow; }
 
   /*!
+   * \brief Set the kind of inlet boundary condition treatment (total conditions or mass flow).
+   * \param[in] kind_inflow - kind of inlet boundary condition.
+   */
+  void SetKind_Engine_Inflow(unsigned short kind_inflow) { Kind_Engine_Inflow = kind_inflow; }
+
+  /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
    * \return Kind of inlet boundary condition.
    */
@@ -6761,6 +6767,31 @@ public:
   su2double GetExhaust_Temperature_Target(const string& val_index) const;
 
   /*!
+   * \brief Get the total temperature at a nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The total temperature.
+   */
+  inline su2double GetExhaust_Temperature_Target(unsigned short val_index) const {
+    return Exhaust_Temperature_Target[val_index];
+  }
+
+  /*!
+   * \brief Set the total temperature at an nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \param[in] target - Total temperature target.
+   */
+  void SetExhaust_Temperature_Target(const string& val_index, su2double target) const;
+
+  /*!
+   * \brief Set the total temperature at an nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \param[in] target - Total temperature target.
+   */
+  inline void SetExhaust_Temperature_Target(unsigned short val_index, su2double target) const {
+    Exhaust_Temperature_Target[val_index] = target;
+  }
+
+  /*!
    * \brief Get the total temperature at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
@@ -6836,6 +6867,31 @@ public:
    * \return The total pressure.
    */
   su2double GetExhaust_Pressure_Target(const string& val_index) const;
+
+  /*!
+   * \brief Get the total pressure at an nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The total pressure.
+   */
+  inline su2double GetExhaust_Pressure_Target(unsigned short val_index) const {
+    return Exhaust_Pressure_Target[val_index];
+  }
+
+  /*!
+   * \brief Set the total pressure at an nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \param[in] target - Total pressure target.
+   */
+  void SetExhaust_Pressure_Target(const string& val_index, su2double target) const;
+
+  /*!
+   * \brief Set the total pressure at an nacelle boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \param[in] target - Total pressure target.
+   */
+  inline void SetExhaust_Pressure_Target(unsigned short val_index, su2double target) const {
+    Exhaust_Pressure_Target[val_index] = target;
+  }
 
   /*!
    * \brief Value of the CFL reduction in turbulence problems.
@@ -7082,6 +7138,29 @@ public:
    * \return Target (pressure, massflow, etc) .
    */
   su2double GetEngineInflow_Target(const string& val_marker) const;
+
+  /*!
+   * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \return Target (pressure, massflow, etc) .
+   */
+  inline su2double GetEngineInflow_Target(unsigned short val_index) const { return EngineInflow_Target[val_index]; }
+
+  /*!
+   * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] target - Target (pressure, massflow, etc) .
+   */
+  void SetEngineInflow_Target(const string& val_index, su2double target) const;
+
+  /*!
+   * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] target - Target (pressure, massflow, etc) .
+   */
+  inline void SetEngineInflow_Target(unsigned short val_index, su2double target) const {
+    EngineInflow_Target[val_index] = target;
+  }
 
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
