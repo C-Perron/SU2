@@ -189,17 +189,14 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
-    su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
     Beta                   = config->GetAoS()*PI_NUMBER/180.0;
     Mach                   = config->GetMach();
     Pressure               = config->GetPressure_FreeStreamND();
     Temperature            = config->GetTemperature_FreeStreamND();
+    su2double* Velocity    = config->GetVelocity_FreeStreamND();
 
-    su2double SoundSpeed = 0.0;
-
-    if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
-    if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
+    su2double SoundSpeed = GeometryToolbox::Norm(nDim, Velocity)/Mach;
 
     if (!reset) {
       AD::RegisterInput(Mach);
@@ -211,13 +208,13 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     /*--- Recompute the free stream velocity ---*/
 
     if (nDim == 2) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+      Velocity[0] = cos(Alpha)*Mach*SoundSpeed;
+      Velocity[1] = sin(Alpha)*Mach*SoundSpeed;
     }
     if (nDim == 3) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+      Velocity[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed;
+      Velocity[1] = sin(Beta)*Mach*SoundSpeed;
+      Velocity[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed;
     }
 
     config->SetTemperature_FreeStreamND(Temperature);
