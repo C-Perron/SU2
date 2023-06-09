@@ -1874,20 +1874,22 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
           }
 
-          /*--- Axisymmetric simulations ---*/
-
-          if (axisymmetric)
-            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
-          else
-            AxiFactor = 1.0;
-
           /*--- Force computation, note the minus sign due to the
-           orientation of the normal (outward) ---*/
+          orientation of the normal (outward) ---*/
 
           su2double Force[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
-            ForceInviscid[iDim] += Force[iDim];
+
+          if (axisymmetric) {
+            /*--- Axisymmetric simulations ---*/
+            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+            Force[0] = -(Pressure - Pressure_Inf) * Normal[0] * factor * AxiFactor;
+            ForceInviscid[0] += Force[0];
+          }
+          else {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor;
+              ForceInviscid[iDim] += Force[iDim];
+            }
           }
 
           /*--- Moment with respect to the reference axis ---*/
@@ -1901,9 +1903,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             MomentY_Force[2] += (-Force[2] * Coord[0]);
             MomentY_Force[0] += (Force[0] * Coord[2]);
           }
-          MomentInviscid[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
-          MomentZ_Force[0] += (-Force[0] * Coord[1]);
-          MomentZ_Force[1] += (Force[1] * Coord[0]);
+          if (!axisymmetric) {
+            MomentInviscid[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
+            MomentZ_Force[0] += (-Force[0] * Coord[1]);
+            MomentZ_Force[1] += (Force[1] * Coord[0]);
+          }
         }
       }
 
@@ -2166,20 +2170,22 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
             MassFlow -= Normal[iDim] * Velocity[iDim] * Density;
           }
 
-          /*--- Axisymmetric simulations ---*/
-
-          if (axisymmetric)
-            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
-          else
-            AxiFactor = 1.0;
-
           /*--- Force computation, note the minus sign due to the
-           orientation of the normal (outward) ---*/
+          orientation of the normal (outward) ---*/
 
           su2double Force[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = MassFlow * Velocity[iDim] * factor * AxiFactor;
-            ForceMomentum[iDim] += Force[iDim];
+
+          if (axisymmetric) {
+            /*--- Axisymmetric simulations ---*/
+            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+            Force[0] = MassFlow * Velocity[0] * factor * AxiFactor;
+            ForceMomentum[0] += Force[0];
+          }
+          else {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Force[iDim] = MassFlow * Velocity[iDim] * factor;
+              ForceMomentum[iDim] += Force[iDim];
+            }
           }
 
           /*--- Moment with respect to the reference axis ---*/
@@ -2193,9 +2199,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
             MomentY_Force[2] += (-Force[2] * Coord[0]);
             MomentY_Force[0] += (Force[0] * Coord[2]);
           }
-          MomentMomentum[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
-          MomentZ_Force[0] += (-Force[0] * Coord[1]);
-          MomentZ_Force[1] += (Force[1] * Coord[0]);
+          if (!axisymmetric) {
+            MomentMomentum[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
+            MomentZ_Force[0] += (-Force[0] * Coord[1]);
+            MomentZ_Force[1] += (Force[1] * Coord[0]);
+          }
         }
       }
 
@@ -2617,20 +2625,27 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
        halo cells (for visualization purposes), but not the forces ---*/
 
       if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
-        /*--- Axisymmetric simulations ---*/
 
-        if (axisymmetric)
-          AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
-        else
-          AxiFactor = 1.0;
+        su2double MomentDist[MAXNDIM] = {0.0};
+        for (iDim = 0; iDim < nDim; iDim++) {
+          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+        }
 
         /*--- Force computation ---*/
 
-        su2double Force[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
-          ForceViscous[iDim] += Force[iDim];
-          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+        su2double Force[MAXNDIM] = {0.0};
+
+        if (axisymmetric) {
+          /*--- Axisymmetric simulations ---*/
+          AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+          Force[0] = TauElem[0] * Area * factor * AxiFactor;
+          ForceViscous[0] += Force[0];
+        }
+        else {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Force[iDim] = TauElem[iDim] * Area * factor;
+            ForceViscous[iDim] += Force[iDim];
+          }
         }
 
         /*--- Moment with respect to the reference axis ---*/
@@ -2644,12 +2659,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           MomentY_Force[2] += (-Force[2] * Coord[0]);
           MomentY_Force[0] += (Force[0] * Coord[2]);
         }
-        MomentViscous[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
-        MomentZ_Force[0] += (-Force[0] * Coord[1]);
-        MomentZ_Force[1] += (Force[1] * Coord[0]);
+        if (!axisymmetric) {
+          MomentViscous[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
+          MomentZ_Force[0] += (-Force[0] * Coord[1]);
+          MomentZ_Force[1] += (Force[1] * Coord[0]);
 
-        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex] * Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+          HF_Visc[iMarker] += HeatFlux[iMarker][iVertex] * Area;
+          MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+        }
       }
     }
 
