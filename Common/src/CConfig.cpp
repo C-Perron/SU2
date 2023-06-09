@@ -3638,11 +3638,41 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Weight_ObjFunc[iObj] = 1.0;
   }
 
+
+  /*--- Check that markers associated with surface average objectives are also present in Marker_Analyze ---*/
+
+  for (auto iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+    bool is_analyzed = false;
+    switch(Kind_ObjFunc[iMarker]) {
+      case SURFACE_TOTAL_TEMPERATURE:
+      case SURFACE_TOTAL_PRESSURE:
+      case SURFACE_STATIC_TEMPERATURE:
+      case SURFACE_STATIC_PRESSURE:
+      case SURFACE_MASSFLOW:
+      case SURFACE_MACH:
+        for (auto iAnalyze = 0; iAnalyze < nMarker_Analyze; iAnalyze++) {
+          if (Marker_Monitoring[iMarker] ==  Marker_Analyze[iAnalyze]) {
+            is_analyzed = true;
+          }
+        }
+        if (!is_analyzed) {
+          SU2_MPI::Error("The following objectives require the associated marker to be analyzed in\n"
+                         "details and included in the MARKER_ANALYZE list:\n"
+                         "SURFACE_TOTAL_TEMPERATURE, SURFACE_TOTAL_PRESSURE, SURFACE_MACH,\n"
+                         "SURFACE_STATIC_TEMPERATURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n", CURRENT_FUNCTION);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   /*--- One final check for multi-objective with the set of objectives
    that are not counted per-surface. We will disable multi-objective here. ---*/
 
   if (nObj > 1) {
     unsigned short Obj_0 = Kind_ObjFunc[0];
+    string marker;
     for (unsigned short iObj=1; iObj<nObj; iObj++){
       switch(Kind_ObjFunc[iObj]) {
         case INVERSE_DESIGN_PRESSURE:
@@ -3650,10 +3680,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case THRUST_COEFFICIENT:
         case TORQUE_COEFFICIENT:
         case FIGURE_OF_MERIT:
-        case SURFACE_TOTAL_PRESSURE:
-        case SURFACE_STATIC_PRESSURE:
-        case SURFACE_STATIC_TEMPERATURE:
-        case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
         case SURFACE_MOM_DISTORTION:

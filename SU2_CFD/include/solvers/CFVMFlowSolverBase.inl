@@ -2914,6 +2914,61 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       case MAXIMUM_HEATFLUX:
         objFun += weight * Surface_MaxHF_Visc[iMarker];
         break;
+
+      case SURFACE_TOTAL_TEMPERATURE:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_TotalTemperature(iAnalyze);
+            break;
+          }
+        }
+        break;
+
+      case SURFACE_TOTAL_PRESSURE:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_TotalPressure(iAnalyze);
+            break;
+          }
+        }
+        break;
+
+      case SURFACE_STATIC_TEMPERATURE:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_Temperature(iAnalyze);
+            break;
+          }
+        }
+        break;
+
+      case SURFACE_STATIC_PRESSURE:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_Pressure(iAnalyze);
+            break;
+          }
+        }
+        break;
+
+      case SURFACE_MASSFLOW:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_MassFlow(iAnalyze);
+            break;
+          }
+        }
+        break;
+
+      case SURFACE_MACH:
+        for (auto iAnalyze = 0; iAnalyze < config.GetnMarker_Analyze(); iAnalyze++) {
+          if (config.GetMarker_Monitoring_TagBound(iMarker) == config.GetMarker_Analyze_TagBound(iAnalyze)) {
+            objFun += weight * config.GetSurface_Mach(iAnalyze);
+            break;
+          }
+        }
+        break;
+
       default:
         break;
     }
@@ -2948,18 +3003,18 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case FIGURE_OF_MERIT:
       objFun += weight * TotalCoeff.CMerit;
       break;
-    case SURFACE_TOTAL_PRESSURE:
-      objFun += weight * config.GetSurface_TotalPressure(0);
-      break;
-    case SURFACE_STATIC_PRESSURE:
-      objFun += weight * config.GetSurface_Pressure(0);
-      break;
-    case SURFACE_STATIC_TEMPERATURE:
-      objFun += weight * config.GetSurface_Temperature(0);
-      break;
-    case SURFACE_MASSFLOW:
-      objFun += weight * config.GetSurface_MassFlow(0);
-      break;
+    // case SURFACE_TOTAL_PRESSURE:
+    //   objFun += weight * config.GetSurface_TotalPressure(0);
+    //   break;
+    // case SURFACE_STATIC_PRESSURE:
+    //   objFun += weight * config.GetSurface_Pressure(0);
+    //   break;
+    // case SURFACE_STATIC_TEMPERATURE:
+    //   objFun += weight * config.GetSurface_Temperature(0);
+    //   break;
+    // case SURFACE_MASSFLOW:
+    //   objFun += weight * config.GetSurface_MassFlow(0);
+    //   break;
     case SURFACE_UNIFORMITY:
       objFun += weight * config.GetSurface_Uniformity(0);
       break;
