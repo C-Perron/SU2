@@ -359,6 +359,7 @@ private:
   su2double *Outlet_MassFlow;                /*!< \brief Mass flow for outlet boundaries. */
   su2double *Outlet_Density;                 /*!< \brief Avg. density for outlet boundaries. */
   su2double *Outlet_Area;                    /*!< \brief Area for outlet boundaries. */
+  su2double *Surface_Area;                   /*!< \brief Area at the boundaries. */
   su2double *Surface_MassFlow;               /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;                   /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;            /*!< \brief Temperature at the boundaries. */
@@ -7808,6 +7809,13 @@ public:
   void SetSurface_DC60(unsigned short val_marker, su2double val_surface_distortion) { Surface_DC60[val_marker] = val_surface_distortion; }
 
   /*!
+   * \brief Set the area at the surface.
+   * \param[in] val_marker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_massflow - Value of the area.
+   */
+  void SetSurface_Area(unsigned short val_marker, su2double val_surface_area) { Surface_Area[val_marker] = val_surface_area; }
+
+  /*!
    * \brief Set the massflow at the surface.
    * \param[in] val_marker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_massflow - Value of the mass flow.
@@ -8086,6 +8094,13 @@ public:
    * \return The outlet pressure.
    */
   su2double GetSurface_DC60(unsigned short val_marker) const { return Surface_DC60[val_marker]; }
+
+  /*!
+   * \brief Get the area at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The area.
+   */
+  su2double GetSurface_Area(unsigned short val_marker) const { return Surface_Area[val_marker]; }
 
   /*!
    * \brief Get the massflow at an outlet boundary.

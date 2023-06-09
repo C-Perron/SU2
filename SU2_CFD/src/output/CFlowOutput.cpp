@@ -267,7 +267,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_Density[iMarker]          += Density*Weight;
           Surface_Enthalpy[iMarker]         += Enthalpy*Weight;
           Surface_NormalVelocity[iMarker]   += Vn*Weight;
-          Surface_Pressure[iMarker]         += Pressure*Weight;
           Surface_TotalTemperature[iMarker] += TotalTemperature*Weight;
           Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
           if (species)
@@ -280,6 +279,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
           Surface_StreamVelocity2[iMarker]   += Vn2*Weight;
           Surface_TransvVelocity2[iMarker]   += Vtang2*Weight;
+          // Static pressure should always be area averaged
+          Surface_Pressure[iMarker]          += Pressure*Weight;
 
         }
       }
@@ -394,7 +395,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_Density_Total[iMarker_Analyze]          /= Weight;
       Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
       Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
-      Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
@@ -406,7 +406,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_Density_Total[iMarker_Analyze]          = 0.0;
       Surface_Enthalpy_Total[iMarker_Analyze]         = 0.0;
       Surface_NormalVelocity_Total[iMarker_Analyze]   = 0.0;
-      Surface_Pressure_Total[iMarker_Analyze]         = 0.0;
       Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
@@ -424,16 +423,23 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
       Surface_TransvVelocity2_Total[iMarker_Analyze] /= Area;
+      // Static pressure should always be area averaged
+      Surface_Pressure_Total[iMarker_Analyze]        /= Area;
     }
     else {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze]    = 0.0;
       Surface_TransvVelocity2_Total[iMarker_Analyze]    = 0.0;
+      // Static pressure should always be area averaged
+      Surface_Pressure_Total[iMarker_Analyze]           = 0.0;
     }
 
   }
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+    Area = fabs(Surface_Area_Total[iMarker_Analyze]);
+    config->SetSurface_Area(iMarker_Analyze, Area);
 
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
     if (us_units) MassFlow *= 32.174;

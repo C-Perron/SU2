@@ -925,7 +925,7 @@ void CConfig::SetPointersNull() {
   ActDisk_TotalPressRatio = nullptr;    ActDisk_TotalTempRatio = nullptr;    ActDisk_StaticPressRatio = nullptr;
   ActDisk_StaticTempRatio = nullptr;    ActDisk_NetThrust      = nullptr;    ActDisk_GrossThrust      = nullptr;
   ActDisk_Power           = nullptr;    ActDisk_MassFlow       = nullptr;    ActDisk_Area             = nullptr;
-  ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow        = nullptr;   Surface_Mach             = nullptr;
+  ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow        = nullptr;   Surface_Mach             = nullptr;   Surface_Area = nullptr;
   Surface_Temperature      = nullptr;   Surface_Pressure         = nullptr;  Surface_Density          = nullptr;   Surface_Enthalpy          = nullptr;
   Surface_NormalVelocity   = nullptr;   Surface_TotalTemperature = nullptr;  Surface_TotalPressure    = nullptr;   Surface_PressureDrop    = nullptr;
   Surface_DC60             = nullptr;   Surface_IDC = nullptr;
@@ -5613,6 +5613,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
 
+  Surface_Area = new su2double[nMarker_Analyze] ();
   Surface_MassFlow = new su2double[nMarker_Analyze] ();
   Surface_Mach = new su2double[nMarker_Analyze] ();
   Surface_Temperature = new su2double[nMarker_Analyze] ();
@@ -8136,6 +8137,7 @@ CConfig::~CConfig() {
   delete[] ActDisk_Area;
   delete[] ActDisk_ReverseMassFlow;
 
+  delete[] Surface_Area;
   delete[] Surface_MassFlow;
   delete[] Surface_Mach;
   delete[] Surface_Temperature;
