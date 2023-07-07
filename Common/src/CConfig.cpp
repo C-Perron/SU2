@@ -2150,6 +2150,8 @@ void CConfig::SetConfig_Options() {
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
+  /* DESCRIPTION: TODO  \ingroup Config*/
+  addBoolOption("OBJFUNC_EXTENSION", ObjFunc_Extension, true);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
@@ -8321,6 +8323,9 @@ string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iI
 }
 
 string CConfig::GetObjFunc_Extension(string val_filename) const {
+
+  // Skip if no extension should be added to filename
+  if (!ObjFunc_Extension) {return val_filename;}
 
   string AdjExt, Filename = std::move(val_filename);
 
