@@ -847,7 +847,8 @@ private:
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_MultiGrid,             /*!< \brief Write the coarse grids to the visualization files.  */
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
-  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
+  ObjFunc_Extension;         /*!< \brief TODO. */
   unsigned short
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
