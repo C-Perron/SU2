@@ -75,9 +75,8 @@ class CDriverBase {
   CSurfaceMovement** surface_movement;  /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement*** grid_movement; /*!< \brief Volume grid movement classes of the problem. */
 
-  CConfig* main_config = nullptr; /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
-  CGeometry* main_geometry =
-      nullptr; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
+  CConfig* main_config = nullptr;     /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
+  CGeometry* main_geometry = nullptr; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
 
  public:
   /*!
@@ -96,15 +95,15 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Run() {}
+  virtual void Run(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Finalize() {}
+  virtual void Finalize(){}
 
-  /// \addtogroup PySU2
-  /// @{
+/// \addtogroup PySU2
+/// @{
 
   /*!
    * \brief Get the list of available outputs.
@@ -450,9 +449,9 @@ class CDriverBase {
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
     auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
-    return CPyWrapperMarkerMatrixView(solver->GetNodes()->GetSolution(), main_geometry->vertex[iMarker],
-                                      main_geometry->GetnVertex(iMarker),
-                                      "MarkerSolution of " + solver->GetSolverName(), false);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolution of " + solver->GetSolverName(), false);
   }
 
   /*!
@@ -460,8 +459,8 @@ class CDriverBase {
    */
   inline CPyWrapperMatrixView SolutionTimeN(unsigned short iSolver) {
     auto* solver = GetSolverAndCheckMarker(iSolver);
-    return CPyWrapperMatrixView(solver->GetNodes()->GetSolution_time_n(), "SolutionTimeN of " + solver->GetSolverName(),
-                                false);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n(), "SolutionTimeN of " + solver->GetSolverName(), false);
   }
 
   /*!
@@ -469,9 +468,9 @@ class CDriverBase {
    */
   inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN(unsigned short iSolver, unsigned short iMarker) {
     auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
-    return CPyWrapperMarkerMatrixView(solver->GetNodes()->GetSolution_time_n(), main_geometry->vertex[iMarker],
-                                      main_geometry->GetnVertex(iMarker),
-                                      "MarkerSolutionTimeN of " + solver->GetSolverName(), false);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN of " + solver->GetSolverName(), false);
   }
 
   /*!
@@ -479,8 +478,8 @@ class CDriverBase {
    */
   inline CPyWrapperMatrixView SolutionTimeN1(unsigned short iSolver) {
     auto* solver = GetSolverAndCheckMarker(iSolver);
-    return CPyWrapperMatrixView(solver->GetNodes()->GetSolution_time_n1(),
-                                "SolutionTimeN1 of " + solver->GetSolverName(), false);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), "SolutionTimeN1 of " + solver->GetSolverName(), false);
   }
 
   /*!
@@ -488,9 +487,9 @@ class CDriverBase {
    */
   inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN1(unsigned short iSolver, unsigned short iMarker) {
     auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
-    return CPyWrapperMarkerMatrixView(solver->GetNodes()->GetSolution_time_n1(), main_geometry->vertex[iMarker],
-                                      main_geometry->GetnVertex(iMarker),
-                                      "MarkerSolutionTimeN1 of " + solver->GetSolverName(), false);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN1 of " + solver->GetSolverName(), false);
   }
 
   /*!
@@ -514,9 +513,9 @@ class CDriverBase {
    */
   inline CPyWrapperMarkerMatrixView MarkerPrimitives(unsigned short iMarker) {
     auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
-    return CPyWrapperMarkerMatrixView(const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()),
-                                      main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
-                                      "MarkerPrimitives", false);
+    return CPyWrapperMarkerMatrixView(
+        const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), main_geometry->vertex[iMarker],
+        main_geometry->GetnVertex(iMarker), "MarkerPrimitives", false);
   }
 
   /*!
@@ -535,7 +534,7 @@ class CDriverBase {
    * \param[in] iVertex - Vertex identifier.
    * \param[in] WallTemp - Value of the temperature.
    */
-  inline void SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble WallTemp) {
+  inline void SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble WallTemp)  {
     main_geometry->SetCustomBoundaryTemperature(iMarker, iVertex, WallTemp);
   }
 
@@ -558,8 +557,7 @@ class CDriverBase {
    * \param[in] iVertex - Vertex identifier.
    * \return Wall normal component of the heat flux at the vertex.
    */
-  inline passivedouble GetMarkerNormalHeatFlux(unsigned short iSolver, unsigned short iMarker,
-                                               unsigned long iVertex) const {
+  inline passivedouble GetMarkerNormalHeatFlux(unsigned short iSolver, unsigned short iMarker, unsigned long iVertex) const {
     if (iSolver != HEAT_SOL && iSolver != FLOW_SOL) {
       SU2_MPI::Error("Normal heat flux is only available for flow or heat solvers.", CURRENT_FUNCTION);
     }
@@ -769,5 +767,5 @@ class CDriverBase {
    * \param[in] driver_output - Definition of the driver output.
    */
   void OutputPreprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
-                           COutput*& driver_output);
+                            COutput*& driver_output);
 };

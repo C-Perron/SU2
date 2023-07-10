@@ -324,7 +324,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CDiscAdjSolver::RegisterOutput(CGeometry* geometry, CConfig* config) {
+void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
+
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
   direct_solver->GetNodes()->RegisterSolution(false);
@@ -332,11 +333,12 @@ void CDiscAdjSolver::RegisterOutput(CGeometry* geometry, CConfig* config) {
   direct_solver->RegisterSolutionExtra(false, config);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm) {
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
 
-  const su2double relax = (config->GetInnerIter() == 0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
+  const su2double relax = (config->GetInnerIter()==0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Thread-local residual variables. ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
@@ -348,22 +350,23 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* confi
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-  /*--- Extract the adjoint solution ---*/
 
-  su2double Solution[MAXNVAR] = {0.0};
-  direct_solver->GetNodes()->GetAdjointSolution(iPoint, Solution);
+    /*--- Extract the adjoint solution ---*/
 
-  /*--- Relax and store the adjoint solution, compute the residuals. ---*/
+    su2double Solution[MAXNVAR] = {0.0};
+    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
 
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    su2double residual = Solution[iVar] - nodes->GetSolution_Old(iPoint, iVar);
-    nodes->AddSolution(iPoint, iVar, relax * residual);
+    /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
-    if (iPoint < nPointDomain) {
-      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint, iVar, residual, resRMS, resMax, idxMax);
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
+      nodes->AddSolution(iPoint, iVar, relax*residual);
+
+      if (iPoint < nPointDomain) {
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,residual,resRMS,resMax,idxMax);
+      }
     }
-  }
   }
   END_SU2_OMP_FOR
 
@@ -373,89 +376,95 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* confi
   if (CrossTerm) return;
 
   /*--- "Add" residuals from all threads to global residual variables. ---*/
-  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
   SU2_OMP_MASTER {
-  SetIterLinSolver(direct_solver->System.GetIterations());
-  SetResLinSolver(direct_solver->System.GetResidual());
+    SetIterLinSolver(direct_solver->System.GetIterations());
+    SetResLinSolver(direct_solver->System.GetResidual());
   }
   END_SU2_OMP_MASTER
 
   /*--- Extract and store the adjoint of the primal solution at time n ---*/
   if (time_n_needed) {
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    su2double Solution[MAXNVAR] = {0.0};
-    direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint, Solution);
-    nodes->Set_Solution_time_n(iPoint, Solution);
-  }
-  END_SU2_OMP_FOR
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      su2double Solution[MAXNVAR] = {0.0};
+      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
+    }
+    END_SU2_OMP_FOR
   }
 
   /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
   if (time_n1_needed) {
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    su2double Solution[MAXNVAR] = {0.0};
-    direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint, Solution);
-    nodes->Set_Solution_time_n1(iPoint, Solution);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      su2double Solution[MAXNVAR] = {0.0};
+      direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      nodes->Set_Solution_time_n1(iPoint,Solution);
+    }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
-  }
+
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry* geometry, CConfig* config) {
+void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) &&
-      !config->GetBoolTurbomachinery()) {
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
-    Local_Sens_Mach = SU2_TYPE::GetDerivative(Mach);
-    Local_Sens_AoA = SU2_TYPE::GetDerivative(Alpha);
-    Local_Sens_Temp = SU2_TYPE::GetDerivative(Temperature);
+    Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
+    Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
+    Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
     Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
 
-    SU2_MPI::Allreduce(&Local_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Local_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Local_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) &&
-      config->GetBoolTurbomachinery()) {
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
     Local_Sens_Temperature = SU2_TYPE::GetDerivative(Temperature);
 
-    SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Local_Sens_Temperature, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_BPress,   &Total_Sens_BPress,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_Temperature,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      (KindDirect_Solver == RUNTIME_FLOW_SYS && (!config->GetBoolTurbomachinery()))) {
+      (KindDirect_Solver == RUNTIME_FLOW_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+
     su2double Local_Sens_ModVel, Local_Sens_BPress, Local_Sens_Temp;
 
     Local_Sens_ModVel = SU2_TYPE::GetDerivative(ModVel);
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
-    Local_Sens_Temp = SU2_TYPE::GetDerivative(Temperature);
+    Local_Sens_Temp   = SU2_TYPE::GetDerivative(Temperature);
 
     SU2_MPI::Allreduce(&Local_Sens_ModVel, &Total_Sens_ModVel, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Local_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      (KindDirect_Solver == RUNTIME_RADIATION_SYS && (!config->GetBoolTurbomachinery()))) {
+      (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+
     su2double Local_Sens_Temp_Rad;
-    Local_Sens_Temp_Rad = SU2_TYPE::GetDerivative(TemperatureRad);
+    Local_Sens_Temp_Rad   = SU2_TYPE::GetDerivative(TemperatureRad);
 
     SU2_MPI::Allreduce(&Local_Sens_Temp_Rad, &Total_Sens_Temp_Rad, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
     Total_Sens_Temp = Total_Sens_Temp_Rad;
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
