@@ -234,7 +234,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
 
   if (config->GetComm_Level() == COMM_FULL) {
     norm_r = r.norm();
-    norm0 = b.norm();
+    norm0 = max(b.norm(), eps / tol);
 
     /*--- Set the norm to the initial initial residual value ---*/
 
@@ -382,7 +382,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Calculate the norm of the rhs vector. ---*/
 
-  ScalarType norm0 = b.norm();
+  ScalarType norm0 = max(b.norm(), eps / tol);
 
   /*--- Calculate the initial residual (actually the negative residual) and compute its norm. ---*/
 
@@ -526,7 +526,7 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
   }
   END_SU2_OMP_MASTER
 
-  const ScalarType norm0 = b.norm();  // <- Has a barrier
+  const ScalarType norm0 = max(b.norm(), eps / tol);  // <- Has a barrier
 
   for (auto totalIter = 0ul; totalIter < MaxIter;) {
     /*--- Enforce a hard limit on total number of iterations ---*/
@@ -587,7 +587,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   if (config->GetComm_Level() == COMM_FULL) {
     norm_r = r.norm();
-    norm0 = b.norm();
+    norm0 = max(b.norm(), eps / tol);
 
     /*--- Set the norm to the initial initial residual value ---*/
 
@@ -760,7 +760,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   if (config->GetComm_Level() == COMM_FULL) {
     norm_r = r.norm();
-    norm0 = b.norm();
+    norm0 = max(b.norm(), eps / tol);
 
     /*--- Set the norm to the initial initial residual value ---*/
 
