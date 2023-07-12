@@ -107,6 +107,36 @@ void CDriver::SetFarFieldAoS(const passivedouble AoS) {
   solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
 }
 
+void CDriver::SetFarFieldMach(const passivedouble Mach) {
+
+  // Don't do anything if not compressible flow
+  if (
+    (config_container[ZONE_0]->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) ||
+    (config_container[ZONE_0]->GetBoolTurbomachinery())
+  ) {
+    return;
+  }
+
+  const su2double Mach_old = config_container[ZONE_0]->GetMach();
+
+  su2double ModVel, ModVelND;
+  su2double *Velocity = config_container[ZONE_0]->GetVelocity_FreeStream();
+  su2double *VelocityND = config_container[ZONE_0]->GetVelocity_FreeStreamND();
+
+  // Velocity is shared with the flow solver
+  for (auto i=0; i<nDim; i++) {
+    Velocity[i] *= Mach / Mach_old;
+    VelocityND[i] *= Mach / Mach_old;
+  }
+
+  ModVel = GeometryToolbox::Norm(nDim, Velocity);
+  ModVelND = GeometryToolbox::Norm(nDim, VelocityND);
+
+  config_container[ZONE_0]->SetMach(Mach);
+  config_container[ZONE_0]->SetModVel_FreeStream(ModVel);
+  config_container[ZONE_0]->SetModVel_FreeStreamND(ModVelND);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
