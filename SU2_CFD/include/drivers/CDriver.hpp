@@ -522,6 +522,12 @@ class CDriver : public CDriverBase {
   void SetFarFieldAoS(passivedouble beta);
 
   /*!
+   * \brief Set the angle of sideslip of the farfield.
+   * \param[in] beta - Angle (degree).
+   */
+  void SetFarFieldMach(passivedouble Mach);
+
+  /*!
    * \brief Set the dynamic mesh translation rates.
    * \param[in] xDot - Value of translational velocity in x-direction.
    * \param[in] yDot - Value of translational velocity in y-direction.
