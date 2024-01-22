@@ -712,7 +712,7 @@ class CDriverBase {
   }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /* Functions added for more granular control */
+  /* Functions added for more granular control (START) */
   ////////////////////////////////////////////////////////////////////////////////
 
   /*!
@@ -727,7 +727,24 @@ class CDriverBase {
     return solver_container[iZone][INST_0][MESH_0][iSolution];
   }
 
-  /// \}
+  /*!
+   * \brief TBD
+   */
+  inline long GetNodeLocalIndex(unsigned long iGlobal) const {
+    return main_geometry->GetGlobal_to_Local_Point(iGlobal);
+  }
+
+  /*!
+   * \brief TBD
+   */
+  inline long GetMarkerVertex(unsigned long iPoint, unsigned long iMarker) const {
+    if (iMarker >= GetNumberMarkers()) return -1;
+    return main_geometry->nodes->GetVertex(iPoint, iMarker);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /* Functions added for more granular control (END) */
+  ////////////////////////////////////////////////////////////////////////////////
 
  protected:
   /*!
