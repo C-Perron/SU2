@@ -3119,6 +3119,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \return Value of the temperature at the infinity.
+   */
+  inline virtual su2double GetTemperature_Inf(void) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the density at the infinity.
    */
   inline virtual su2double GetDensity_Inf(void) const { return 0; }
