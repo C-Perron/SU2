@@ -325,6 +325,7 @@ protected:
   rhoResOld;              /*!< Old value of the residual for adaptive CFL routine. */
 
   /*----------------------------- Time Convergence monitoring ----------------------------*/
+
   vector<string> wndConvFields;                /*!< \brief Name of the field to be monitored for convergence. */
   vector<vector<su2double> > WndCauchy_Serie;  /*!< \brief Complete Cauchy serial. */
   unsigned long nWndCauchy_Elems;              /*!< \brief Total number of cauchy elems to monitor */
@@ -335,6 +336,12 @@ protected:
   su2double WndCauchy_Func;       /*!< \brief Current value of the convergence indicator at one iteration. */
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
+
+  /*----------------------------- Custom Output Sum Objective ----------------------------*/
+
+  vector<string> outputComboNames;        /*!< \brief TODO */
+  vector<const su2double*> outputComboPtrs;     /*!< \brief TODO */
+  vector<su2double> outputComboWeights;   /*!< \brief TODO */
 
 public:
   /*----------------------------- Public member functions ----------------------------*/
@@ -613,6 +620,56 @@ public:
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
   void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
+
+
+  /*----------------------------- Custom Output Sum Objective ----------------------------*/
+
+  /*!
+   * \brief TODO
+   */
+  inline const vector<string> GetOutputComboNames() const {return outputComboNames;}
+
+  /*!
+   * \brief TODO
+   */
+  inline const vector<su2double> GetOutputComboWeights() const {return outputComboWeights;}
+
+  /*!
+   * \brief TODO
+   */
+  inline const vector<su2double> GetOutputComboValues() const {
+    vector<su2double> values;
+    values.reserve(outputComboPtrs.size());
+    for (auto & ptr : outputComboPtrs) values.push_back(*ptr);
+    return values;
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline const su2double GetOutputComboObj() const {
+    su2double obj = 0.0;
+    for (auto & ptr : outputComboPtrs) obj += *ptr;
+    return obj;
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline void ClearOutputCombo() {
+    outputComboNames.clear();
+    outputComboPtrs.clear();
+    outputComboWeights.clear();
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline void AddOutputComboField(string name, su2double weight = 1.0) {
+    outputComboNames.push_back(name);
+    outputComboPtrs.push_back(GetPtrToHistoryOutput(name));
+    outputComboWeights.push_back(weight);
+  }
 
 protected:
 

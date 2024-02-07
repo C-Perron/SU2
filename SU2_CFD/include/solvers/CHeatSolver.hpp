@@ -345,6 +345,7 @@ public:
         Total_ComboObj = weight * Total_AverageT;
         break;
       case CUSTOM_OBJFUNC:
+      case OUTPUT_COMBO:
         Total_ComboObj = weight * Total_Custom_ObjFunc;
         break;
       default:
