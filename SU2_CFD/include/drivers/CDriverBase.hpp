@@ -730,6 +730,13 @@ class CDriverBase {
   /*!
    * \brief TBD
    */
+  COutput* GetOutput() {
+    return output_container[MESH_0];
+  }
+
+  /*!
+   * \brief TBD
+   */
   inline long GetNodeLocalIndex(unsigned long iGlobal) const {
     return main_geometry->GetGlobal_to_Local_Point(iGlobal);
   }
