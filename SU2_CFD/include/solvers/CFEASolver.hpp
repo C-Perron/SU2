@@ -566,7 +566,7 @@ public:
         Total_ComboObj = GetTotal_OFStressPenalty();
         break;
       case CUSTOM_OBJFUNC:
-      case OUTPUT_COMBO:
+      case PYTHON_EXTENSION:
         Total_ComboObj = Total_Custom_ObjFunc;
         break;
     }

@@ -308,8 +308,8 @@ void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHist
 
 void COutput::SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver) {
 
-  if (config->GetKind_ObjFunc() == OUTPUT_COMBO) {
-    solver[idxSol]->SetTotal_Custom_ObjFunc(GetOutputComboObj());
+  if (config->GetKind_ObjFunc() == PYTHON_EXTENSION) {
+    solver[idxSol]->SetTotal_Custom_ObjFunc(GetPythonExtObjective());
   } else if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC && !config->GetCustomObjFunc().empty()) {
     if (!customObjFunc.ready) {
       SetupCustomHistoryOutput(config->GetCustomObjFunc(), customObjFunc);
