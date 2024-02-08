@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <limits>
 #include <vector>
+#include <functional>
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
@@ -337,11 +338,11 @@ protected:
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
-  /*----------------------------- Custom Output Sum Objective ----------------------------*/
+  /*----------------------------- Python Extension Objective ----------------------------*/
 
-  vector<string> outputComboNames;        /*!< \brief TODO */
-  vector<const su2double*> outputComboPtrs;     /*!< \brief TODO */
-  vector<su2double> outputComboWeights;   /*!< \brief TODO */
+  vector<string> pythonExtOutputNames;                                  /*!< \brief TODO */
+  vector<su2double> pythonExtOutputWeights;                             /*!< \brief TODO */
+  vector<std::reference_wrapper<const su2double>> pythonExtOutputRefs;  /*!< \brief TODO */
 
 public:
   /*----------------------------- Public member functions ----------------------------*/
@@ -622,53 +623,108 @@ public:
   void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
 
 
-  /*----------------------------- Custom Output Sum Objective ----------------------------*/
+  /*----------------------------- Python Extension Objective ----------------------------*/
 
   /*!
    * \brief TODO
    */
-  inline const vector<string> GetOutputComboNames() const {return outputComboNames;}
+  inline const vector<string> GetPythonExtOutputNames() const {return pythonExtOutputNames;}
 
   /*!
    * \brief TODO
    */
-  inline const vector<su2double> GetOutputComboWeights() const {return outputComboWeights;}
+  inline const vector<su2double> GetPythonExtOutputWeights() const {return pythonExtOutputWeights;}
 
   /*!
    * \brief TODO
    */
-  inline const vector<su2double> GetOutputComboValues() const {
+  inline const vector<su2double> GetPythonExtOutputValues() const {
     vector<su2double> values;
-    values.reserve(outputComboPtrs.size());
-    for (auto & ptr : outputComboPtrs) values.push_back(*ptr);
+    values.reserve(pythonExtOutputRefs.size());
+    for (const auto& ptr : pythonExtOutputRefs) values.push_back(ptr);
     return values;
   }
 
   /*!
    * \brief TODO
    */
-  inline const su2double GetOutputComboObj() const {
+  inline const su2double GetPythonExtObjective() const {
     su2double obj = 0.0;
-    for (auto & ptr : outputComboPtrs) obj += *ptr;
+    for (auto i = 0; i < pythonExtOutputRefs.size(); ++i)
+      obj += pythonExtOutputRefs[i].get() * pythonExtOutputWeights[i];
     return obj;
   }
 
   /*!
    * \brief TODO
    */
-  inline void ClearOutputCombo() {
-    outputComboNames.clear();
-    outputComboPtrs.clear();
-    outputComboWeights.clear();
+  inline void ClearPythonExtOutputs() {
+    pythonExtOutputNames.clear();
+    pythonExtOutputWeights.clear();
+    pythonExtOutputRefs.clear();
   }
 
   /*!
    * \brief TODO
    */
-  inline void AddOutputComboField(string name, su2double weight = 1.0) {
-    outputComboNames.push_back(name);
-    outputComboPtrs.push_back(GetPtrToHistoryOutput(name));
-    outputComboWeights.push_back(weight);
+  inline void AddPythonExtOutput(string name, su2double weight = 1.0) {
+    const auto it = historyOutput_Map.find(name);
+    if (it == historyOutput_Map.end())
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+
+    pythonExtOutputNames.push_back(name);
+    pythonExtOutputWeights.push_back(weight);
+    pythonExtOutputRefs.push_back(std::ref(it->second.value));
+  }
+
+  inline void AddPythonExtOuputPerSurface(const string& name, unsigned short iMarker, su2double weight = 1.0) {
+    const auto it = historyOutputPerSurface_Map.find(name);
+    if (it == historyOutputPerSurface_Map.end())
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    if (iMarker >= it->second.size())
+      SU2_MPI::Error("Index out of bound for output field " + name, CURRENT_FUNCTION);
+
+    pythonExtOutputNames.push_back(name + "[" + std::to_string(iMarker) + "]");
+    pythonExtOutputWeights.push_back(weight);
+    pythonExtOutputRefs.push_back(std::ref(it->second[iMarker].value));
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline bool IsHistoryOutputName(const string& name) const {
+    if (historyOutput_Map.find(name) == historyOutput_Map.end()) return false;
+    return true;
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline bool IsHistoryOutputPerSurfaceName(const string& name, unsigned short iMarker) const {
+    const auto it = historyOutputPerSurface_Map.find(name);
+    if (it == historyOutputPerSurface_Map.end()) return false;
+    if (iMarker >= it->second.size()) return false;
+    return true;
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline const string GetHistoryOutputGroup(const string& name) const {
+    const auto it = historyOutput_Map.find(name);
+    if (it == historyOutput_Map.end())
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return it->second.outputGroup;
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline const string GetHistoryOutputPerSurfaceGroup(const string& name) const {
+    const auto it = historyOutputPerSurface_Map.find(name);
+    if ((it == historyOutputPerSurface_Map.end()) or (it->second.empty()))
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return it->second.front().outputGroup;
   }
 
 protected:

@@ -2062,7 +2062,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  OUTPUT_COMBO = 32,       /*!< \brief TODO */
+  PYTHON_EXTENSION = 32,       /*!< \brief TODO */
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
@@ -2106,7 +2106,7 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("OUTPUT_COMBO", OUTPUT_COMBO)
+  MakePair("PYTHON_EXTENSION", PYTHON_EXTENSION)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
