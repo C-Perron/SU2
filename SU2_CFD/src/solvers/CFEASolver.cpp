@@ -1796,7 +1796,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
         Compute_NodalStress(geometry, numerics, config);
         break;
       case CUSTOM_OBJFUNC:
-      case OUTPUT_COMBO:
+      case PYTHON_EXTENSION:
         /*--- No easy way to know, so compute everything. ---*/
         computeAllFunctions();
         break;
