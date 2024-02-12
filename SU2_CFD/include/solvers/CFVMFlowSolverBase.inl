@@ -2880,6 +2880,13 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
 
   su2double objFun = 0.0;
 
+  /*--- Exit early if using python extension ---*/
+
+  if (config.GetKind_ObjFunc() == PYTHON_EXTENSION) {
+    objFun = Total_Custom_ObjFunc;
+    return objFun;
+  }
+
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
   for (auto iMarker = 0u; iMarker < config.GetnMarker_Monitoring(); iMarker++) {
@@ -3043,7 +3050,6 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       objFun += weight * config.GetSurface_Species_Variance(0);
       break;
     case CUSTOM_OBJFUNC:
-    case PYTHON_EXTENSION:
       objFun += weight * Total_Custom_ObjFunc;
       break;
     default:

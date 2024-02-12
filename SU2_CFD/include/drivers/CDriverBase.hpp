@@ -768,20 +768,27 @@ class CDriverBase {
   /*!
    * \brief TODO
    */
-  CConfig* GetConfig(unsigned short iZone) { return config_container[iZone]; }
+  inline CConfig* GetConfig(unsigned short iZone) { return config_container[iZone]; }
 
   /*!
    * \brief TODO
    */
-  CSolver* GetSolver(unsigned short iZone, unsigned short iSolution) {
+  inline CSolver* GetSolver(unsigned short iZone, unsigned short iSolution) {
     return solver_container[iZone][INST_0][MESH_0][iSolution];
   }
 
   /*!
    * \brief TODO
    */
-  COutput* GetOutput() {
+  inline COutput* GetOutput() {
     return output_container[MESH_0];
+  }
+
+  /*!
+   * \brief TODO
+   */
+  virtual inline COutput* GetDirectOutput() {
+    return GetOutput();
   }
 
   /*!
