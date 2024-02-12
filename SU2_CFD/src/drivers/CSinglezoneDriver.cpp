@@ -299,8 +299,10 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   }
 
   /*--- Reset the inner convergence --- */
-
-  output_container[ZONE_0]->SetConvergence(false);
+  /* Note: Not sure why this is necessary.
+     It makes checking for convergence more difficult with python extension
+  */
+  // output_container[ZONE_0]->SetConvergence(false);
 
   /*--- Increase the total iteration count --- */
 
