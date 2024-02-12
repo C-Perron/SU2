@@ -126,4 +126,16 @@ public:
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
   void Postprocess(void) override;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /* Functions added for more granular control (START) */
+  ////////////////////////////////////////////////////////////////////////////////
+
+  /*!
+   * \brief TODO
+   */
+  inline COutput* GetDirectOutput() override {
+    return direct_output;
+  }
+
 };
