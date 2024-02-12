@@ -346,8 +346,10 @@ public:
         Total_ComboObj = weight * Total_AverageT;
         break;
       case CUSTOM_OBJFUNC:
-      case PYTHON_EXTENSION:
         Total_ComboObj = weight * Total_Custom_ObjFunc;
+        break;
+      case PYTHON_EXTENSION:
+        Total_ComboObj = Total_Custom_ObjFunc;
         break;
       default:
         Total_ComboObj = 0.0;
