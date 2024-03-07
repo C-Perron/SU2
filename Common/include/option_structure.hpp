@@ -2048,7 +2048,6 @@ enum ENUM_OBJECTIVE {
   TORQUE_COEFFICIENT = 18,      /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,         /*!< \brief Rotor Figure of Merit objective function definition. */
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
-  SURFACE_TOTAL_TEMPERATURE = 26,  /*!< \brief Total Temperature objective function definition. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
   SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
@@ -2092,7 +2091,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("AVG_TEMPERATURE", AVG_TEMPERATURE)
   MakePair("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
   MakePair("BUFFET", BUFFET_SENSOR)
-  MakePair("SURFACE_TOTAL_TEMPERATURE", SURFACE_TOTAL_TEMPERATURE)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
   MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
