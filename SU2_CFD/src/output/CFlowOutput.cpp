@@ -1681,11 +1681,11 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
-  AddHistoryOutput("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total moment x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis
-  AddHistoryOutput("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total moment y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis
-  AddHistoryOutput("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total moment z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction
   AddHistoryOutput("FORCE_X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction
@@ -1694,6 +1694,27 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutput("FORCE_Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
   AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+
+  /// BEGIN_GROUP: AERO_DIM, DESCRIPTION: Sum of the aerodynamic dimensional forces on all surfaces (markers) set with MARKER_MONITORING.
+  /// DESCRIPTION: Drag
+  AddHistoryOutput("DRAG_DIM",      "Drag", ScreenOutputFormat::FIXED, "AERO_DIM", "Total drag on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Lift
+  AddHistoryOutput("LIFT_DIM",      "Lift", ScreenOutputFormat::FIXED, "AERO_DIM", "Total lift on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Sideforce
+  AddHistoryOutput("SIDEFORCE_DIM", "SF",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total sideforce on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the x-axis
+  AddHistoryOutput("MOMENT_X_DIM",  "Mx",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total moment x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the y-axis
+  AddHistoryOutput("MOMENT_Y_DIM",  "My",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total moment y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the z-axis
+  AddHistoryOutput("MOMENT_Z_DIM",  "Mz",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total moment z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in x direction
+  AddHistoryOutput("FORCE_X_DIM",   "Fx",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in y direction
+  AddHistoryOutput("FORCE_Y_DIM",   "Fy",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total force y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in z direction
+  AddHistoryOutput("FORCE_Z_DIM",   "Fz",   ScreenOutputFormat::FIXED, "AERO_DIM", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
@@ -1723,6 +1744,26 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
+  /// DESCRIPTION: Drag
+  AddHistoryOutputPerSurface("SURFACE_DRAG_DIM",      "Drag", ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Lift
+  AddHistoryOutputPerSurface("SURFACE_LIFT_DIM",      "Lift", ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Sideforce
+  AddHistoryOutputPerSurface("SURFACE_SIDEFORCE_DIM", "SF",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the x-axis
+  AddHistoryOutputPerSurface("SURFACE_MOMENT_X_DIM",  "Mx",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the y-axis
+  AddHistoryOutputPerSurface("SURFACE_MOMENT_Y_DIM",  "My",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Moment around the z-axis
+  AddHistoryOutputPerSurface("SURFACE_MOMENT_Z_DIM",  "Mz",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in x direction
+  AddHistoryOutputPerSurface("SURFACE_FORCE_X_DIM",   "Fx",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in y direction
+  AddHistoryOutputPerSurface("SURFACE_FORCE_Y_DIM",   "Fy",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Force in z direction
+  AddHistoryOutputPerSurface("SURFACE_FORCE_Z_DIM",   "Fz",   ScreenOutputFormat::FIXED, "AERO_DIM_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
 
@@ -1731,38 +1772,62 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
-  SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
+  const su2double ref_force = flow_solver->GetAeroCoeffsReferenceForce() * config->GetForce_Ref();
+  const su2double ref_moment = ref_force * config->GetRefLength();
+
+  SetHistoryOutputValue("REFERENCE_FORCE", ref_force);
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
-  if (nDim == 3)
-    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
-  if (nDim == 3){
-    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
-    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
-  }
   SetHistoryOutputValue("MOMENT_Z", flow_solver->GetTotal_CMz());
   SetHistoryOutputValue("FORCE_X", flow_solver->GetTotal_CFx());
   SetHistoryOutputValue("FORCE_Y", flow_solver->GetTotal_CFy());
-  if (nDim == 3)
-    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
+  // Dimensional
+  SetHistoryOutputValue("DRAG_DIM", flow_solver->GetTotal_CD() * ref_force);
+  SetHistoryOutputValue("LIFT_DIM", flow_solver->GetTotal_CL() * ref_force);
+  SetHistoryOutputValue("FORCE_X_DIM", flow_solver->GetTotal_CFx() * ref_force);
+  SetHistoryOutputValue("FORCE_Y_DIM", flow_solver->GetTotal_CFy() * ref_force);
+  SetHistoryOutputValue("MOMENT_Z_DIM", flow_solver->GetTotal_CMz() * ref_moment);
+
+  if (nDim == 3){
+    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
+    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
+    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
+    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
+    // Dimensional
+    SetHistoryOutputValue("SIDEFORCE_DIM", flow_solver->GetTotal_CSF() * ref_force);
+    SetHistoryOutputValue("FORCE_Z_DIM", flow_solver->GetTotal_CFz() * ref_force);
+    SetHistoryOutputValue("MOMENT_X_DIM", flow_solver->GetTotal_CMx() * ref_moment);
+    SetHistoryOutputValue("MOMENT_Y_DIM", flow_solver->GetTotal_CMy() * ref_moment);
+  }
 
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3){
-      SetHistoryOutputPerSurfaceValue("MOMENT_X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
-      SetHistoryOutputPerSurfaceValue("MOMENT_Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
-    }
-    SetHistoryOutputPerSurfaceValue("MOMENT_Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("FORCE_X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("FORCE_Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
+    SetHistoryOutputPerSurfaceValue("MOMENT_Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
+    // Dimensional
+    SetHistoryOutputPerSurfaceValue("SURFACE_DRAG_DIM", flow_solver->GetSurface_CD(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("SURFACE_LIFT_DIM", flow_solver->GetSurface_CL(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("SURFACE_FORCE_X_DIM", flow_solver->GetSurface_CFx(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("SURFACE_FORCE_Y_DIM", flow_solver->GetSurface_CFy(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("SURFACE_MOMENT_Z_DIM", flow_solver->GetSurface_CMz(iMarker_Monitoring) * ref_moment, iMarker_Monitoring);
+
+    if (nDim == 3){
+      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
       SetHistoryOutputPerSurfaceValue("FORCE_Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT_X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT_Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
+      // Dimensional
+      SetHistoryOutputPerSurfaceValue("SURFACE_SIDEFORCE_DIM", flow_solver->GetSurface_CSF(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("SURFACE_FORCE_Z_DIM", flow_solver->GetSurface_CFz(iMarker_Monitoring) * ref_force, iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("SURFACE_MOMENT_X_DIM", flow_solver->GetSurface_CMx(iMarker_Monitoring) * ref_moment, iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("SURFACE_MOMENT_Y_DIM", flow_solver->GetSurface_CMy(iMarker_Monitoring) * ref_moment, iMarker_Monitoring);
+    }
 
     SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
+
     if (config->GetAeroelastic_Simulation()){
       SetHistoryOutputPerSurfaceValue("PITCH", config->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
       SetHistoryOutputPerSurfaceValue("PLUNGE", config->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
