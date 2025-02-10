@@ -34,7 +34,7 @@
 #include "drivers/CDriver.hpp"
 #include "drivers/CSinglezoneDriver.hpp"
 #include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjKrylovSinglezoneDriver.hpp"
+#include "drivers/CKrylovAdjSinglezoneDriver.hpp"
 #include "drivers/CDiscAdjMultizoneDriver.hpp"
 #include "drivers/CDummyDriver.hpp"
 #include "output/COutput.hpp"

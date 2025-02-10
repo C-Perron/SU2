@@ -160,4 +160,30 @@ class CDiscAdjFluidIteration final : public CIteration {
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                        unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
+  /*--- NEW ---*/
+
+  void RegisterInputSolution(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) override;
+
+  void RegisterInputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) override;
+
+  void RegisterOutputResiduals(CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) override;
+
+  void RegisterOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) override;
+
+  void ExtractAdjInputSolution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) override;
+
+  void ExtractAdjInputVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) override;
+
+  void SetAdjOutputResiduals(CSolver***** solver, CConfig** config, unsigned short iZone,
+                                      unsigned short iInst, CSysVector<passivedouble> residuals_adj) override;
+
+  void SetAdjOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) override;
+
 };

@@ -804,7 +804,7 @@ class CFVMFlowSolverBase : public CSolver {
                   IntegrationType == RUNGE_KUTTA_EXPLICIT ||
                   IntegrationType == EULER_EXPLICIT, "");
 
-    const bool adjoint = config->GetContinuous_Adjoint();
+    const bool skip_update = (config->GetContinuous_Adjoint() || SkipSolutionUpdate);
 
     const su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
 
@@ -818,7 +818,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- Update the solution and residuals ---*/
 
-    if (!adjoint) {
+    if (!skip_update) {
       SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -868,17 +868,33 @@ class CFVMFlowSolverBase : public CSolver {
         }
       }
       END_SU2_OMP_FOR
-      /*--- Reduce residual information over all threads in this rank. ---*/
-      ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
-
     }
+    else {
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+        const su2double* Residual = LinSysRes.GetBlock(iPoint);
+
+        preconditioner.compute(config, iPoint);
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          /*--- Update residual information for current thread. ---*/
+          su2double Res = preconditioner.apply(iVar, Residual, Res_TruncError);
+          ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+    /*--- Reduce residual information over all threads in this rank. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 
     /*--- MPI solution ---*/
 
     InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
     CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
-    if (!adjoint) {
+    if (!skip_update) {
       /*--- For verification cases, compute the global error metrics. ---*/
       ComputeVerificationError(geometry, config);
     }
@@ -981,11 +997,13 @@ class CFVMFlowSolverBase : public CSolver {
   template<bool compute_ur>
   void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
 
+    const bool skip_update = (config->GetContinuous_Adjoint() || SkipSolutionUpdate);
+
     if (compute_ur) ComputeUnderRelaxationFactor(config);
 
     /*--- Update solution with under-relaxation and communicate it. ---*/
 
-    if (!config->GetContinuous_Adjoint()) {
+    if (!skip_update) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -1004,7 +1022,7 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
     /*--- For verification cases, compute the global error metrics. ---*/
-    ComputeVerificationError(geometry, config);
+    if (!skip_update) ComputeVerificationError(geometry, config);
   }
 
   /*!

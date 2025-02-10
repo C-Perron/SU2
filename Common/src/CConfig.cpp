@@ -8679,6 +8679,12 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     default:
       break;
   }
+
+  /*--- NEW ---*/
+
+  if ((ForceExplicitTimeIntScheme) && (Kind_TimeNumScheme != NONE))
+    SetKind_TimeIntScheme(EULER_EXPLICIT);
+
 }
 
 const su2double* CConfig::GetPeriodicRotCenter(const string& val_marker) const {

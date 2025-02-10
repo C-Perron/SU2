@@ -30,17 +30,32 @@
 #include "CSinglezoneDriver.hpp"
 
 /*!
- * \class CDiscAdjSinglezoneDriver
+ * \class CKrylovAdjSinglezoneDriver
  * \ingroup DiscAdj
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
  * \version 8.1.0 "Harrier"
  */
-class CDiscAdjKrylovSinglezoneDriver : public CSinglezoneDriver {
+class CKrylovAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
 
+  enum class ADJ_OUTPUT {
+    NONE,
+    OUTPUTS,
+    RESIDUALS,
+  };
+
+  enum class ADJ_INPUT {
+    NONE,
+    SOLUTION,
+    VARIABLES,
+    MESH_COORDS,
+    MESH_DEFORM,
+  };
+
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
-  RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
+  ADJ_OUTPUT TapeOutput;
+  ADJ_INPUT TapeInput;
   RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
   RECORDING SecondaryVariables;                 /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
   int MainSolver;                               /*!< \brief Index of the main adjoint solver. */
@@ -55,22 +70,30 @@ protected:
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
+  CSysVector<passivedouble> AdjSysRHS;
+
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void SetRecording(RECORDING kind_recording);
+  void SetRecording(ADJ_OUTPUT adj_out, ADJ_INPUT adj_inp, const bool initial = false);
+
+  inline void ClearRecording(const bool initial = false) {
+    SetRecording(ADJ_OUTPUT::NONE, ADJ_INPUT::NONE, initial);
+  }
 
   /*!
    * \brief Run one iteration of the solver.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void DirectRun(RECORDING kind_recording);
+  void DirectRun(void);
 
   /*!
    * \brief Set the objective function.
    */
   void SetObjFunction(void);
+
+  inline void RegisterObjFunction(void) {if (rank == MASTER_NODE) AD::RegisterOutput(ObjFunc);}
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
@@ -80,7 +103,7 @@ protected:
   /*!
    * \brief Record the main computational path.
    */
-  void MainRecording(void);
+  void SetMainAdjointSystem(void);
 
   /*!
    * \brief Record the secondary computational path.
@@ -102,14 +125,14 @@ public:
    * \param[in] val_nDim - Total number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDiscAdjKrylovSinglezoneDriver(char* confFile,
+  CKrylovAdjSinglezoneDriver(char* confFile,
              unsigned short val_nZone,
              SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjKrylovSinglezoneDriver(void) override;
+  ~CKrylovAdjSinglezoneDriver(void) override;
 
   /*!
    * \brief Preprocess the single-zone iteration

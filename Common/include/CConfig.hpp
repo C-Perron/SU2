@@ -538,6 +538,9 @@ private:
   n_Datadriven_files;
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
+  /*--- NEW ---*/
+  bool ForceExplicitTimeIntScheme = false;
+
   su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
@@ -4332,6 +4335,12 @@ public:
    * \brief Get the relaxation factor for solution updates of adjoint solvers.
    */
   su2double GetRelaxation_Factor_Adjoint(void) const { return Relaxation_Factor_Adjoint; }
+
+  /*!
+   * \brief Set the relaxation factor for solution updates of adjoint solvers.
+   */
+  // TODO: Temporary fix for solution adjoint extraction
+  void SetRelaxation_Factor_Adjoint(const su2double factor) { Relaxation_Factor_Adjoint = factor; }
 
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
@@ -9919,5 +9928,9 @@ public:
    * \return LM option data structure.
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
+
+  /*--- NEW ---*/
+
+  void SetForceExplicitTimeInt(const bool flag) {ForceExplicitTimeIntScheme = flag;}
 
 };

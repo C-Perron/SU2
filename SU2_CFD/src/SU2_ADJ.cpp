@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
 
     if (disc_adj) {
-      driver = new CDiscAdjKrylovSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+      driver = new CKrylovAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     }
     else {
       SU2_MPI::Error("NOT IMPLEMENTED", CURRENT_FUNCTION);
@@ -131,7 +131,8 @@ int main(int argc, char *argv[]) {
 
   /*--- Launch the main external loop of the solver. ---*/
 
-  driver->StartSolver();
+  driver->Preprocess(0.0);
+  // driver->StartSolver();
 
   /*--- Finalize solver, delete all the containers, close history file, exit SU2. ---*/
 

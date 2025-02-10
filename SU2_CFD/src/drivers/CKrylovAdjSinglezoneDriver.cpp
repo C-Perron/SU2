@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/drivers/CDiscAdjKrylovSinglezoneDriver.hpp"
+#include "../../include/drivers/CKrylovAdjSinglezoneDriver.hpp"
 #include "../../include/output/tools/CWindowingTools.hpp"
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
@@ -33,7 +33,7 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
-CDiscAdjKrylovSinglezoneDriver::CDiscAdjKrylovSinglezoneDriver(char* confFile,
+CKrylovAdjSinglezoneDriver::CKrylovAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
                                                                                                  val_nZone,
@@ -52,9 +52,14 @@ CDiscAdjKrylovSinglezoneDriver::CDiscAdjKrylovSinglezoneDriver(char* confFile,
   integration = integration_container[ZONE_0][INST_0];
 
   /*--- Store the recording state ---*/
-  RecordingState = RECORDING::CLEAR_INDICES;
+  TapeOutput = ADJ_OUTPUT::NONE;
+  TapeInput = ADJ_INPUT::NONE;
 
   /*--- Initialize the direct iteration ---*/
+
+  // TODO: Remove error after implementing more solvers
+  if (config->GetKind_Solver() != MAIN_SOLVER::DISC_ADJ_EULER)
+    SU2_MPI::Error("Solver Kind is not implemented!", CURRENT_FUNCTION);
 
   switch (config->GetKind_Solver()) {
 
@@ -116,18 +121,47 @@ CDiscAdjKrylovSinglezoneDriver::CDiscAdjKrylovSinglezoneDriver(char* confFile,
 
   }
 
- direct_output->PreprocessHistoryOutput(config, false);
+  /*--- Disable solution updates in all direct solvers since we only need the residuals ---*/
+
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+      auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
+      if (solver && !solver->GetAdjoint()) {
+        solver->SkipSolutionUpdate = true;
+      }
+    }
+  }
+
+  /*--- Disable multi-grid since we don't update any direct solutions ---*/
+
+  config->SetMGLevels(0);
+
+  // TODO: Temporary fix for solution adjoint extraction
+
+  config->SetRelaxation_Factor_Adjoint(1.0);
+
+  /*--- Initialize RHS vector ---*/
+
+  const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
+  const auto nPoint = geometry->GetnPoint();
+  const auto nPointDomain = geometry->GetnPointDomain();
+
+  AdjSysRHS.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  /*--- Preprocess history output ---*/
+
+  direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
-CDiscAdjKrylovSinglezoneDriver::~CDiscAdjKrylovSinglezoneDriver() {
+CKrylovAdjSinglezoneDriver::~CKrylovAdjSinglezoneDriver() {
 
   delete direct_iteration;
   delete direct_output;
 
 }
 
-void CDiscAdjKrylovSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+void CKrylovAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set the current time iteration in the config and also in the driver
    * because the python interface doesn't offer an explicit way of doing it. ---*/
@@ -141,17 +175,16 @@ void CDiscAdjKrylovSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-  /*--- For the adjoint iteration we need the derivatives of the iteration function with
-   *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
-   *--- we only have to record if the current recording is different from the main variables. ---*/
+  /*--- Clear previous record and check direct solution residuals ---*/
+  ClearRecording(true);
 
-  if (RecordingState != MainVariables){
-    MainRecording();
-  }
-
+  /*--- Prepare the adjoint linear system ---*/
+  SetMainAdjointSystem();
 }
 
-void CDiscAdjKrylovSinglezoneDriver::Run() {
+void CKrylovAdjSinglezoneDriver::Run() {
+
+  SU2_MPI::Error("Run function not implemeted!", CURRENT_FUNCTION);
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -216,7 +249,7 @@ void CDiscAdjKrylovSinglezoneDriver::Run() {
 
 }
 
-void CDiscAdjKrylovSinglezoneDriver::Postprocess() {
+void CKrylovAdjSinglezoneDriver::Postprocess() {
 
   switch(config->GetKind_Solver())
   {
@@ -245,9 +278,49 @@ void CDiscAdjKrylovSinglezoneDriver::Postprocess() {
 
 }
 
-void CDiscAdjKrylovSinglezoneDriver::SetRecording(RECORDING kind_recording){
+void CKrylovAdjSinglezoneDriver::SetRecording(ADJ_OUTPUT adj_out, ADJ_INPUT adj_inp, const bool initial){
 
   AD::Reset();
+
+  /*--- If this is the initial pass, let solver use their existing time integration scheme so
+        that Jacobians can be formed. Use EULER_EXPLICIT afterward to avoid reforming Jacobians ---*/
+
+  if (initial) config->SetForceExplicitTimeInt(true);
+
+  /*--- Store the recording state ---*/
+
+  RECORDING kind_recording;
+  const bool clear_tape = (adj_out != ADJ_OUTPUT::NONE) && (adj_inp != ADJ_INPUT::NONE);
+
+  if (clear_tape) {
+    TapeOutput = ADJ_OUTPUT::NONE;
+    TapeInput = ADJ_INPUT::NONE;
+    kind_recording = RECORDING::CLEAR_INDICES;
+  }
+  else {
+    TapeOutput = adj_out;
+    TapeInput = adj_inp;
+
+    switch (TapeInput)
+    {
+
+    case ADJ_INPUT::SOLUTION:
+    case ADJ_INPUT::VARIABLES:
+      kind_recording = RECORDING::SOLUTION_VARIABLES;
+      break;
+    case ADJ_INPUT::MESH_COORDS:
+      kind_recording = RECORDING::MESH_COORDS;
+      break;
+
+    case ADJ_INPUT::MESH_DEFORM:
+      kind_recording = RECORDING::MESH_DEFORM;
+      break;
+
+    default:
+      kind_recording = RECORDING::CLEAR_INDICES;
+      break;
+    }
+  }
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
 
@@ -264,23 +337,31 @@ void CDiscAdjKrylovSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
-    switch(kind_recording) {
-    case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
-    case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case RECORDING::SOLUTION_VARIABLES:
-      cout << "Direct iteration to store the primal computational graph." << endl;
-      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
-    default: break;
+    if (clear_tape) cout << "Clearing the computational graph." << endl;
+
+    switch (TapeOutput) {
+      case ADJ_OUTPUT::OUTPUTS: cout << "Recording computational graph of SOLVER OUTPUTS w.r.t. "; break;
+      case ADJ_OUTPUT::RESIDUALS: cout << "Recording computational graph of SOLVER RESIDUALS w.r.t. "; break;
+      default: break;
     }
+
+    switch (TapeInput) {
+      case ADJ_INPUT::SOLUTION: cout << "SOLVER SOLUTION." << endl; break;
+      case ADJ_INPUT::VARIABLES: cout << "SOLVER VARIABLES." << endl; break;
+      case ADJ_INPUT::MESH_COORDS: cout << "MESH COORDINATES." << endl; break;
+      case ADJ_INPUT::MESH_DEFORM: cout << "MESH DEFORMATION." << endl; break;
+      default: break;
+    }
+
+    if (initial) cout << "Computing residuals to check the convergence of the direct problem." << endl;
   }
+
+  if (!clear_tape) AD::StartRecording();
 
   /*---Enable recording and register input of the iteration --- */
 
-  if (kind_recording != RECORDING::CLEAR_INDICES){
-
-    AD::StartRecording();
-
-    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
+  if (TapeInput == ADJ_INPUT::SOLUTION){
+    iteration->RegisterInputSolution(solver_container, geometry_container, config_container, ZONE_0, INST_0);
   }
 
   /*--- Set the dependencies of the iteration ---*/
@@ -290,29 +371,49 @@ void CDiscAdjKrylovSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Do one iteration of the direct solver ---*/
 
-  DirectRun(kind_recording);
+  DirectRun();
 
-  /*--- Store the recording state ---*/
-
-  RecordingState = kind_recording;
-
-  /*--- Register Output of the iteration ---*/
-
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  /*--- Print the direct residual to screen ---*/
+  // TODO: Change flag to not always print the residuals
+  if (initial) (RECORDING::SOLUTION_VARIABLES);
 
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
 
-  if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+  /*--- Register tape outputs --- */
+
+  switch (TapeOutput)
+  {
+  case ADJ_OUTPUT::OUTPUTS:
+    iteration->RegisterOutputVariables(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+    RegisterObjFunction();
+    break;
+
+  case ADJ_OUTPUT::RESIDUALS:
+    iteration->RegisterOutputResiduals(solver_container, config_container, ZONE_0, INST_0);
+    break;
+
+  default:
+    break;
+  }
+
+  if (!clear_tape && config->GetWrt_AD_Statistics()) {
     AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
   }
 
   AD::StopRecording();
 
+  /*--- Restore default time integration scheme ---*/
+
+  config->SetForceExplicitTimeInt(false);
+
 }
 
-void CDiscAdjKrylovSinglezoneDriver::SetAdjObjFunction(){
+void CKrylovAdjSinglezoneDriver::SetAdjObjFunction(){
+
+  if (TapeOutput != ADJ_OUTPUT::OUTPUTS) return;
+
   su2double seeding = 1.0;
 
   if (config->GetTime_Domain()) {
@@ -334,7 +435,7 @@ void CDiscAdjKrylovSinglezoneDriver::SetAdjObjFunction(){
   }
 }
 
-void CDiscAdjKrylovSinglezoneDriver::SetObjFunction(){
+void CKrylovAdjSinglezoneDriver::SetObjFunction(){
 
   ObjFunc = 0.0;
 
@@ -369,18 +470,13 @@ void CDiscAdjKrylovSinglezoneDriver::SetObjFunction(){
   default:
     break;
   }
-
-  if (rank == MASTER_NODE){
-    AD::RegisterOutput(ObjFunc);
-  }
-
 }
 
-void CDiscAdjKrylovSinglezoneDriver::DirectRun(RECORDING kind_recording){
+void CKrylovAdjSinglezoneDriver::DirectRun(){
 
   /*--- Mesh movement ---*/
-
-  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+  // TODO: Make this work with mesh deformation
+  // direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_inp_rec);
 
   /*--- Zone preprocessing ---*/
 
@@ -393,59 +489,73 @@ void CDiscAdjKrylovSinglezoneDriver::DirectRun(RECORDING kind_recording){
   /*--- Postprocess the direct solver ---*/
 
   direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-  /*--- Print the direct residual to screen ---*/
-
-  PrintDirectResidual(kind_recording);
-
 }
 
-void CDiscAdjKrylovSinglezoneDriver::MainRecording(){
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
-   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+void CKrylovAdjSinglezoneDriver::SetMainAdjointSystem(){
 
-  SetRecording(RECORDING::CLEAR_INDICES);
+  if ((TapeOutput != ADJ_OUTPUT::NONE) || (TapeInput != ADJ_INPUT::NONE)) ClearRecording();
 
-  /*--- Store the computational graph of one direct iteration with the solution variables as input. ---*/
+  /*--- Compute and store RHS of the adjoint problem ---*/
 
-  SetRecording(MainVariables);
-
-}
-
-void CDiscAdjKrylovSinglezoneDriver::SecondaryRecording(){
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
-   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
-
-  SetRecording(RECORDING::CLEAR_INDICES);
-
-  /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
-
-  SetRecording(SecondaryVariables);
-
-  /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-   *    of the current iteration. The values are passed to the AD tool. ---*/
-
-  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
-  /*--- Initialize the adjoint of the objective function with 1.0. ---*/
-
+  // Record computational graph of the objective w.r.t. the direct solution
+  SetRecording(ADJ_OUTPUT::OUTPUTS, ADJ_INPUT::SOLUTION);
+  // Initialize the adjoint of the objective
   SetAdjObjFunction();
-
-  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-
+  // Extract the derivatives w.r.t. the direct solution
   AD::ComputeAdjoint();
 
-  /*--- Extract the computed sensitivity values. ---*/
+  iteration->ExtractAdjInputSolution(geometry_container, solver_container,
+                                     config_container, ZONE_0, INST_0, false);
 
-  if (SecondaryVariables == RECORDING::MESH_COORDS) {
-    solver[MainSolver]->SetSensitivity(geometry, config);
-  }
-  else { // MESH_DEFORM
-    solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
-  }
+  GetAllSolutions(ZONE_0, true, AdjSysRHS);
 
-  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
+  // Clear the stored adjoint information to be ready for a new evaluation. ---*/
   AD::ClearAdjoints();
+
+  /*--- Setup recording for solving the linear system ---*/
+
+  // Clear previous record
+  ClearRecording();
+  // Record computational graph of the residulas w.r.t. the direct solution
+  SetRecording(ADJ_OUTPUT::RESIDUALS, ADJ_INPUT::SOLUTION);
+
+}
+
+void CKrylovAdjSinglezoneDriver::SecondaryRecording(){
+  SU2_MPI::Error("Not implemented!", CURRENT_FUNCTION);
+  // /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+  //  *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+
+  // SetRecording(RECORDING::CLEAR_INDICES);
+
+  // /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+
+  // SetRecording(SecondaryVariables);
+
+  // /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+  //  *    of the current iteration. The values are passed to the AD tool. ---*/
+
+  // iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+
+  // /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+  // SetAdjObjFunction();
+
+  // /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+  // AD::ComputeAdjoint();
+
+  // /*--- Extract the computed sensitivity values. ---*/
+
+  // if (SecondaryVariables == RECORDING::MESH_COORDS) {
+  //   solver[MainSolver]->SetSensitivity(geometry, config);
+  // }
+  // else { // MESH_DEFORM
+  //   solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
+  // }
+
+  // /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  // AD::ClearAdjoints();
 
 }

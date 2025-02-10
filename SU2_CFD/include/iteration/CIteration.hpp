@@ -295,4 +295,31 @@ class CIteration {
 
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
+
+  /*--- NEW ---*/
+
+  virtual void RegisterInputSolution(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {}
+
+  virtual void RegisterInputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {}
+
+  virtual void RegisterOutputResiduals(CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {}
+
+  virtual void RegisterOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {}
+
+  virtual void ExtractAdjInputSolution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) {}
+
+  virtual void ExtractAdjInputVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) {}
+
+  virtual void SetAdjOutputResiduals(CSolver***** solver, CConfig** config, unsigned short iZone,
+                                      unsigned short iInst, CSysVector<passivedouble> residuals_adj) {}
+
+  virtual void SetAdjOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {}
+
 };

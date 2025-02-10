@@ -165,8 +165,7 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp',
-                      'drivers/CDriverBase.cpp',
-                      'drivers/CDiscAdjKrylovSinglezoneDriver.cpp'])
+                      'drivers/CDriverBase.cpp'])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CIntegrationFactory.cpp',
@@ -187,6 +186,10 @@ su2_cfd_src += files(['iteration/CIteration.cpp',
                       'iteration/CFluidIteration.cpp',
                       'iteration/CHeatIteration.cpp',
                       'iteration/CTurboIteration.cpp'])
+
+su2_adj_src = files(
+  'drivers/CKrylovAdjSinglezoneDriver.cpp'
+)
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 
@@ -227,7 +230,7 @@ if get_option('enable-autodiff')
                           link_args: profiling_args)
 
   su2_adj = executable('SU2_ADJ',
-                          'SU2_ADJ.cpp',
+                          'SU2_ADJ.cpp', su2_adj_src,
                           install : true,
                           dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
                           cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args] + profiling_args,

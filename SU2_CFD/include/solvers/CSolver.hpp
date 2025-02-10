@@ -209,6 +209,10 @@ public:
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
 #endif
 
+  /*--- NEW ---*/
+
+  bool SkipSolutionUpdate = false;
+
   /*!
    * \brief Constructor of the class.
    */
@@ -4250,6 +4254,31 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void RegisterVertexTractions(CGeometry *geometry, const CConfig *config);
+
+  inline void RegisterResiduals(void) {
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(LinSysRes(iPoint, iVar));
+    END_SU2_OMP_FOR
+
+  }
+
+  inline void SetResidualsAdjoint(CSysVector<passivedouble> LinSysResAdj) {
+
+    int index;
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          AD::SetIndex(index, LinSysRes(iPoint, iVar));
+          AD::SetDerivative(index, LinSysResAdj(iPoint, iVar));
+      }
+    }
+    END_SU2_OMP_FOR
+
+  }
 
   /*!
    * \brief Store the adjoints of the vertex tractions.

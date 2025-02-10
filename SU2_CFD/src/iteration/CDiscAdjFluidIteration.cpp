@@ -552,3 +552,159 @@ bool CDiscAdjFluidIteration::Monitor(COutput* output, CIntegration**** integrati
 
   return output->GetConvergence();
 }
+
+/*--- NEW ---*/
+
+void CDiscAdjFluidIteration::RegisterInputSolution(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                                   unsigned short iZone, unsigned short iInst) {
+
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  if (config[iZone]->GetFluidProblem()) {
+    solvers0[ADJFLOW_SOL]->RegisterSolution(geometry0, config[iZone]);
+  }
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
+    solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
+  }
+  if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);
+  }
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
+    solvers0[ADJHEAT_SOL]->RegisterSolution(geometry0, config[iZone]);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solvers0[ADJRAD_SOL]->RegisterSolution(geometry0, config[iZone]);
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::RegisterInputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                                   unsigned short iZone, unsigned short iInst) {
+
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  if (config[iZone]->GetFluidProblem()) {
+    solvers0[ADJFLOW_SOL]->RegisterVariables(geometry0, config[iZone]);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solvers0[ADJRAD_SOL]->RegisterVariables(geometry0, config[iZone]);
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::RegisterOutputResiduals(CSolver***** solver, CConfig** config,
+                                                    unsigned short iZone, unsigned short iInst) {
+
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  if (config[iZone]->GetFluidProblem()) {
+    solvers0[ADJFLOW_SOL]->RegisterResiduals();
+  }
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
+    solvers0[ADJTURB_SOL]->RegisterResiduals();
+  }
+  if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    solvers0[ADJSPECIES_SOL]->RegisterResiduals();
+  }
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
+    solvers0[ADJHEAT_SOL]->RegisterResiduals();
+  }
+  if (config[iZone]->AddRadiation()) {
+    solvers0[ADJRAD_SOL]->RegisterResiduals();
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::RegisterOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                                    unsigned short iZone, unsigned short iInst) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
+    solvers0[FLOW_SOL]->RegisterVertexTractions(geometry0, config[iZone]);
+  }
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::ExtractAdjInputSolution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                                    unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  if (config[iZone]->GetFluidProblem()) {
+    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+  }
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
+    solvers0[ADJTURB_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+  }
+  if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    solvers0[ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+  }
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
+    solvers0[ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solvers0[ADJRAD_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::ExtractAdjInputVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  if (config[iZone]->GetFluidProblem()) {
+    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solvers0[ADJRAD_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CDiscAdjFluidIteration::SetAdjOutputResiduals(CSolver***** solver, CConfig** config, unsigned short iZone,
+                                                   unsigned short iInst, CSysVector<passivedouble> residuals_adj) {}
+
+void CDiscAdjFluidIteration::SetAdjOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                                      unsigned short iZone, unsigned short iInst) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
+
+  AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
+
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
+  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
+    solvers0[FLOW_SOL]->SetVertexTractionsAdjoint(geometry0, config[iZone]);
+  }
+
+  }
+  END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
+}
