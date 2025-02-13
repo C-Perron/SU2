@@ -163,27 +163,27 @@ class CDiscAdjFluidIteration final : public CIteration {
   /*--- NEW ---*/
 
   void RegisterInputSolution(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) override;
+      unsigned short iZone, unsigned short iInst) override;
 
   void RegisterInputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) override;
+      unsigned short iZone, unsigned short iInst) override;
 
   void RegisterOutputResiduals(CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) override;
+      unsigned short iZone, unsigned short iInst) override;
 
   void RegisterOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) override;
+      unsigned short iZone, unsigned short iInst) override;
 
-  void ExtractAdjInputSolution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) override;
+  void ExtractAdjointSolutionVector(CSysVector<passivedouble> &solution_adj, CGeometry**** geometry,
+      CSolver***** solver, CConfig** config, unsigned short iZone, unsigned short iInst) override;
 
-  void ExtractAdjInputVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) override;
+  void ExtractAdjointVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+      unsigned short iZone, unsigned short iInst, bool CrossTerm) override;
 
-  void SetAdjOutputResiduals(CSolver***** solver, CConfig** config, unsigned short iZone,
-                                      unsigned short iInst, CSysVector<passivedouble> residuals_adj) override;
+  void SetAdjointResidualsVector(const CSysVector<passivedouble> &residuals_adj, CSolver***** solver,
+      CConfig** config, unsigned short iZone, unsigned short iInst) override;
 
-  void SetAdjOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) override;
+  void SetAdjointVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+      unsigned short iZone, unsigned short iInst) override;
 
 };

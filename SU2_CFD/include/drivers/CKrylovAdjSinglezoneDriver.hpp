@@ -70,7 +70,8 @@ protected:
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
-  CSysVector<passivedouble> AdjSysRHS;
+  CSysVector<passivedouble> AdjSysRes;
+  CSysVector<passivedouble> AdjSysSol;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

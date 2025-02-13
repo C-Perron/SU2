@@ -146,7 +146,8 @@ CKrylovAdjSinglezoneDriver::CKrylovAdjSinglezoneDriver(char* confFile,
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
 
-  AdjSysRHS.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  AdjSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  AdjSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Preprocess history output ---*/
 
@@ -504,10 +505,8 @@ void CKrylovAdjSinglezoneDriver::SetMainAdjointSystem(){
   // Extract the derivatives w.r.t. the direct solution
   AD::ComputeAdjoint();
 
-  iteration->ExtractAdjInputSolution(geometry_container, solver_container,
-                                     config_container, ZONE_0, INST_0, false);
-
-  GetAllSolutions(ZONE_0, true, AdjSysRHS);
+  iteration->ExtractAdjointSolutionVector(AdjSysRes, geometry_container, solver_container,
+      config_container, ZONE_0, INST_0);
 
   // Clear the stored adjoint information to be ready for a new evaluation. ---*/
   AD::ClearAdjoints();

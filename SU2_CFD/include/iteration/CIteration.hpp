@@ -299,27 +299,27 @@ class CIteration {
   /*--- NEW ---*/
 
   virtual void RegisterInputSolution(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) {}
+      unsigned short iZone, unsigned short iInst) {}
 
   virtual void RegisterInputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) {}
+      unsigned short iZone, unsigned short iInst) {}
 
   virtual void RegisterOutputResiduals(CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) {}
+      unsigned short iZone, unsigned short iInst) {}
 
   virtual void RegisterOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) {}
+      unsigned short iZone, unsigned short iInst) {}
 
-  virtual void ExtractAdjInputSolution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) {}
+  virtual void ExtractAdjointSolutionVector(CSysVector<passivedouble> &solution_adj, CGeometry**** geometry,
+      CSolver***** solver, CConfig** config, unsigned short iZone, unsigned short iInst) {}
 
-  virtual void ExtractAdjInputVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst, bool CrossTerm) {}
+  virtual void ExtractAdjointVariables(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+      unsigned short iZone, unsigned short iInst, bool CrossTerm) {}
 
-  virtual void SetAdjOutputResiduals(CSolver***** solver, CConfig** config, unsigned short iZone,
-                                      unsigned short iInst, CSysVector<passivedouble> residuals_adj) {}
+  virtual void SetAdjointResidualsVector(const CSysVector<passivedouble> &residuals_adj, CSolver***** solver,
+      CConfig** config, unsigned short iZone, unsigned short iInst) {}
 
-  virtual void SetAdjOutputVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                      unsigned short iZone, unsigned short iInst) {}
+  virtual void SetAdjointVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+      unsigned short iZone, unsigned short iInst) {}
 
 };

@@ -266,4 +266,24 @@ public:
     return false;
   }
 
+  /*--- NEW ---*/
+
+  inline void ExtractAdjointSolutionVector(CSysVector<passivedouble> &solution_adj) {
+    // This should be disabled if not in debug
+    assert(
+      (solution_adj.GetNVar() == nVar) ||
+      (solution_adj.GetLocSize() == nPoint)
+    );
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+
+      su2double Solution[nVar] = {0.0};
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        solution_adj(iPoint, iVar) = SU2_TYPE::GetValue(Solution[iVar]);
+    }
+    END_SU2_OMP_FOR
+  }
 };
