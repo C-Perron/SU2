@@ -269,11 +269,6 @@ public:
   /*--- NEW ---*/
 
   inline void ExtractAdjointSolutionVector(CSysVector<passivedouble> &solution_adj) {
-    // This should be disabled if not in debug
-    assert(
-      (solution_adj.GetNVar() == nVar) ||
-      (solution_adj.GetLocSize() == nPoint)
-    );
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -285,5 +280,33 @@ public:
         solution_adj(iPoint, iVar) = SU2_TYPE::GetValue(Solution[iVar]);
     }
     END_SU2_OMP_FOR
+
   }
+
+  inline void RegisterOutputResiduals(void) {
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(direct_solver->LinSysRes(iPoint, iVar));
+    END_SU2_OMP_FOR
+
+  }
+
+  inline void SetAdjointResidualsVector(const CSysVector<passivedouble> &residuals_adj) {
+
+    int index;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          AD::SetIndex(index, direct_solver->LinSysRes(iPoint, iVar));
+          // This assumes the residuals sign was not flip (like in implicit solver)
+          AD::SetDerivative(index, residuals_adj(iPoint, iVar));
+      }
+    }
+    END_SU2_OMP_FOR
+
+  }
+
 };

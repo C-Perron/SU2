@@ -647,6 +647,9 @@ void CDiscAdjFluidIteration::ExtractAdjointSolutionVector(CSysVector<passivedoub
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
+  AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
+
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   if (config[iZone]->GetFluidProblem()) {
@@ -670,6 +673,8 @@ void CDiscAdjFluidIteration::ExtractAdjointSolutionVector(CSysVector<passivedoub
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjFluidIteration::ExtractAdjointVariables(CGeometry**** geometry, CSolver***** solver,
@@ -696,6 +701,9 @@ void CDiscAdjFluidIteration::SetAdjointResidualsVector(const CSysVector<passived
 
   auto solvers0 = solver[iZone][iInst][MESH_0];
 
+  AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
+
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   if (config[iZone]->GetFluidProblem()) {
@@ -719,6 +727,8 @@ void CDiscAdjFluidIteration::SetAdjointResidualsVector(const CSysVector<passived
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjFluidIteration::SetAdjointVariables(CSolver***** solver, CGeometry**** geometry, CConfig** config,

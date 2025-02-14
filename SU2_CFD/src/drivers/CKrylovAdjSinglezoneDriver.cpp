@@ -185,68 +185,79 @@ void CKrylovAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CKrylovAdjSinglezoneDriver::Run() {
 
+  CSysVector<passivedouble> tmp_vec;
+
+  tmp_vec.PassiveCopy(AdjSysSol);
+
+  iteration->SetAdjointResidualsVector(AdjSysSol, solver_container, config_container, ZONE_0, INST_0);
+
+  AD::ComputeAdjoint();
+
+  iteration->ExtractAdjointSolutionVector(tmp_vec, geometry_container, solver_container,
+      config_container, ZONE_0, INST_0);
+
   SU2_MPI::Error("Run function not implemeted!", CURRENT_FUNCTION);
 
-  CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
-  if (config->GetnQuasiNewtonSamples() > 1) {
-    fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
-                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
-                          GetTotalNumberOfVariables(ZONE_0,true),
-                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+  // CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
+  // if (config->GetnQuasiNewtonSamples() > 1) {
+  //   fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
+  //                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+  //                         GetTotalNumberOfVariables(ZONE_0,true),
+  //                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
 
-    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
-  }
+  //   if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
+  // }
 
-  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+  // for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
-    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-     *--- of the previous iteration. The values are passed to the AD tool.
-     *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
+  //   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+  //    *--- of the previous iteration. The values are passed to the AD tool.
+  //    *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetInnerIter(Adjoint_Iter);
+  //   config->SetInnerIter(Adjoint_Iter);
 
-    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  //   iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+  //   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdjObjFunction();
+  //   SetAdjObjFunction();
 
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+  //   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-    AD::ComputeAdjoint();
+  //   AD::ComputeAdjoint();
 
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+  //   /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->IterateDiscAdj(geometry_container, solver_container,
-                              config_container, ZONE_0, INST_0, false);
+  //   iteration->IterateDiscAdj(geometry_container, solver_container,
+  //                             config_container, ZONE_0, INST_0, false);
 
-    /*--- Monitor the pseudo-time ---*/
+  //   /*--- Monitor the pseudo-time ---*/
 
-    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                  solver_container, numerics_container, config_container,
-                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  //   StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+  //                                 solver_container, numerics_container, config_container,
+  //                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+  //   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
-    AD::ClearAdjoints();
+  //   AD::ClearAdjoints();
 
-    /*--- Output files for steady state simulations. ---*/
+  //   /*--- Output files for steady state simulations. ---*/
 
-    if (!config->GetTime_Domain()) {
-      iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
-    }
+  //   if (!config->GetTime_Domain()) {
+  //     iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
+  //                       config_container, Adjoint_Iter, false, ZONE_0, INST_0);
+  //   }
 
-    if (StopCalc) break;
+  //   if (StopCalc) break;
 
-    /*--- Correct the solution with the quasi-Newton approach. ---*/
+  //   /*--- Correct the solution with the quasi-Newton approach. ---*/
 
-    if (fixPtCorrector.size()) {
-      GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
-      SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
-    }
+  //   if (fixPtCorrector.size()) {
+  //     GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
+  //     SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
+  //   }
 
-  }
+  // }
 
 }
 
@@ -291,7 +302,7 @@ void CKrylovAdjSinglezoneDriver::SetRecording(ADJ_OUTPUT adj_out, ADJ_INPUT adj_
   /*--- Store the recording state ---*/
 
   RECORDING kind_recording;
-  const bool clear_tape = (adj_out != ADJ_OUTPUT::NONE) && (adj_inp != ADJ_INPUT::NONE);
+  const bool clear_tape = (adj_out == ADJ_OUTPUT::NONE) || (adj_inp == ADJ_INPUT::NONE) || initial;
 
   if (clear_tape) {
     TapeOutput = ADJ_OUTPUT::NONE;
