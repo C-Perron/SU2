@@ -51,12 +51,15 @@ protected:
   class AdjointProductWrapper : public CMatrixVectorProduct<Scalar> {
   public:
     CDiscAdjKrylovSinglezoneDriver* const driver;
+    mutable unsigned long iInnerIter = 0;
+
     AdjointProductWrapper(CDiscAdjKrylovSinglezoneDriver* d) : driver(d) {}
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
       driver->SetAllSolutions(ZONE_0, true, u);
-      driver->Iterate(true);
+      driver->Iterate(iInnerIter, true);
       driver->GetAllSolutions(ZONE_0, true, v);
       v -= u;
+      ++iInnerIter;
     }
   };
 
@@ -64,16 +67,6 @@ protected:
   public:
     inline bool IsIdentity() const override { return true; }
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
-  };
-
-  /*!
-   * \brief Position markers within a tape.
-   */
-  enum Tape_Positions {
-    START = 0,                    /*!< \brief Beginning of the tape. */
-    OBJECTIVE_FUNCTION = 1,       /*!< \brief Objective function is set. */
-    SOLUTION = 2,             /*!< \brief Derived values (e.g. gradients) are set. */
-    END = 3,
   };
 
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
@@ -91,12 +84,6 @@ protected:
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
-
-  /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton). */
-  static constexpr unsigned long KrylovMinIters = 3;
-  const Scalar KrylovTol = 0.01;
-  CSysSolve<Scalar> LinSolver;
-  CSysVector<Scalar> AdjRHS, AdjSol;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
@@ -139,7 +126,7 @@ protected:
   /*!
    * \brief TODO
    */
-  bool EvaluateObjectiveFunctionGradient(void);
+  bool GetAdjointRHS(CSysVector<Scalar>& rhs);
 
   /*!
    * \brief TODO
@@ -149,53 +136,26 @@ protected:
   /*!
    * \brief TODO
    */
-  bool Iterate(const bool krylov_mode = false);
-
+  void RunFixedPoint(void);
+  /*!
+   * \brief TODO
+   */
+  bool Iterate(unsigned long iInnerIter, bool KrylovMode);
 
   /*!
    * \brief TODO
    */
-  inline void AddSolutionToExternal(void) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto isolver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (isolver && isolver->GetAdjoint())
-        isolver->Add_Solution_To_External();
-    }
-  }
-
-  inline void AddExternalToSolution(void) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto isolver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (isolver && isolver->GetAdjoint())
-        isolver->Add_External_To_Solution();
-    }
-  }
-
-  /*!
-   * \brief TODO
-   */
-  inline void SetExternalToDualTimeDer(void) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto isolver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (isolver && isolver->GetAdjoint())
-        isolver->GetNodes()->Set_External_To_DualTimeDer();
-    }
-  }
-
-  /*!
-   * \brief TODO
-   */
-  template<class Container>
-  void GetAdjointRHS(Container& rhs) const {
-    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+  template <class Container>
+  void GetAllSolutionsNeg(unsigned short iZone, bool adjoint, Container& solution) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto isolver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (!(isolver && isolver->GetAdjoint())) continue;
-      const auto& ext = isolver->GetNodes()->Get_External();
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      const auto& sol = solver->GetNodes()->GetSolution();
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < isolver->GetnVar(); ++iVar)
-          rhs(iPoint,offset+iVar) = -SU2_TYPE::GetValue(ext(iPoint,iVar));
-      offset += isolver->GetnVar();
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solution(iPoint, offset + iVar) = -SU2_TYPE::GetValue(sol(iPoint, iVar));
+      offset += solver->GetnVar();
     }
   }
 
