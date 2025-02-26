@@ -1760,6 +1760,15 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
   addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
 
+  /* DESCRIPTION: Use a Krylov solver instead a the fixed-point to solve discrete adjoint problem.*/
+  addBoolOption("DISCADJ_KRYLOV", DiscAdjKrylov, false);
+  /* DESCRIPTION: Kind of Krylov solver used for the discrete adjoint problem. */
+  addEnumOption("DISCADJ_KRYLOV_SOLVER", KindDiscAdjKrylov, Linear_Solver_Map, FGMRES);
+  /* DESCRIPTION: Max number of the Krylov solver iteration before iterating the main solver. */
+  addUnsignedShortOption("DISCADJ_KRYLOV_ITER", DiscAdjKrylovIter, 10);
+  /* DESCRIPTION: Min error of the Krylov solver iteration before iterating the main solver. */
+  addDoubleOption("DISCADJ_KRYLOV_ERROR", DiscAdjKrylovError, 1e-6);
+
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */

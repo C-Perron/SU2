@@ -152,7 +152,8 @@ void CDiscAdjKrylovSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjKrylovSinglezoneDriver::Run() {
-  RunKrylov();
+  if (config->GetDiscAdjKrylov()) RunKrylov();
+  else RunFixedPoint();
 }
 
 void CDiscAdjKrylovSinglezoneDriver::RunFixedPoint() {
@@ -495,14 +496,22 @@ void CDiscAdjKrylovSinglezoneDriver::RunKrylov() {
     GetAllSolutions(ZONE_0, true, AdjSol);
 
     Scalar eps_l = 0.0;
-    Scalar tol_l = 1e-16;
-    unsigned short iter = 50;
-    iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon,
-                                      tol_l, iter, eps_l, true, config);
+    Scalar tol_l = SU2_TYPE::GetValue(config->GetDiscAdjKrylovError());
+    unsigned short iter = config->GetDiscAdjKrylovIter();
+
+    switch (config->GetKindDiscAdjKrylov())
+    {
+    case BCGSTAB:
+      iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon,
+                                         tol_l, iter, eps_l, true, config);
+      break;
+    default:
+      iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon,
+                                        tol_l, iter, eps_l, true, config);
+      break;
+    }
 
     SetAllSolutions(ZONE_0, true, AdjSol);
-
-
 
     StopCalc = Iterate(Adjoint_Iter, false);
 

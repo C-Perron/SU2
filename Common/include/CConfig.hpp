@@ -431,6 +431,12 @@ private:
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
   array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
 
+  // TODO
+  bool DiscAdjKrylov;
+  unsigned short KindDiscAdjKrylov;
+  unsigned short DiscAdjKrylovIter;
+  su2double DiscAdjKrylovError;
+
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
   su2double
@@ -4363,6 +4369,26 @@ public:
    * \brief Get Newton-Krylov floating-point parameters.
    */
   array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+
+  /*!
+   * \brief TODO.
+   */
+  bool GetDiscAdjKrylov(void) const { return DiscAdjKrylov; }
+
+  /*!
+   * \brief TODO.
+   */
+  unsigned short GetKindDiscAdjKrylov(void) const { return KindDiscAdjKrylov; }
+
+  /*!
+   * \brief TODO.
+   */
+  unsigned short GetDiscAdjKrylovIter(void) const { return DiscAdjKrylovIter; }
+
+  /*!
+   * \brief TODO.
+   */
+  su2double GetDiscAdjKrylovError(void) const { return DiscAdjKrylovError; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
