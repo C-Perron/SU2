@@ -387,10 +387,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solvers0[ADJRAD_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
-  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
-    solvers0[FLOW_SOL]->SetVertexTractionsAdjoint(geometry0, config[iZone]);
-  }
-
   }
   END_SU2_OMP_PARALLEL
 
@@ -527,9 +523,6 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   }
   if (config[iZone]->AddRadiation()) {
     solvers0[ADJRAD_SOL]->RegisterOutput(geometry0, config[iZone]);
-  }
-  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
-    solvers0[FLOW_SOL]->RegisterVertexTractions(geometry0, config[iZone]);
   }
 
   }

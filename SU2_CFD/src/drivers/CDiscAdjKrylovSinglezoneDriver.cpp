@@ -313,6 +313,11 @@ void CDiscAdjKrylovSinglezoneDriver::SetAdjObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
+
+  if (config->GetFluidProblem()) {
+    solver[FLOW_SOL]->SetVertexTractionsAdjoint(geometry, config);
+  }
+
 }
 
 void CDiscAdjKrylovSinglezoneDriver::SetObjFunction(){
@@ -353,6 +358,10 @@ void CDiscAdjKrylovSinglezoneDriver::SetObjFunction(){
 
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
+  }
+
+  if (config->GetFluidProblem()) {
+    solver[FLOW_SOL]->RegisterVertexTractions(geometry, config);
   }
 
 }
