@@ -134,7 +134,9 @@ public:
   /*!
    * \brief TODO
    */
-  inline COutput* GetDirectOutput() override {
+  inline COutput* GetDirectOutput(unsigned short iZone) override {
+    if (iZone >= nZone)
+      SU2_MPI::Error("Zone " + to_string(iZone) + " is out of bound", CURRENT_FUNCTION);
     return direct_output;
   }
 
