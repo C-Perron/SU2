@@ -765,31 +765,58 @@ class CDriverBase {
   /* Functions added for more granular control (START) */
   ////////////////////////////////////////////////////////////////////////////////
 
+    /*!
+   * \brief TODO
+   */
+
+  inline unsigned short GetNumberZones() const { return nZone; }
+
   /*!
    * \brief TODO
    */
-  inline CConfig* GetConfig(unsigned short iZone) { return config_container[iZone]; }
+  inline CConfig* GetConfig(unsigned short iZone) {
+    if (iZone >= nZone)
+      SU2_MPI::Error("Zone " + to_string(iZone) + " is out of bound", CURRENT_FUNCTION);
+    return config_container[iZone];
+  }
+
+  /*!
+   * \brief TODO
+   */
+  inline CConfig* GetMainConfig() { return main_config; }
+
+  /*!
+   * \brief TODO
+   */
+  inline CConfig* GetDriverConfig() { return driver_config; }
 
   /*!
    * \brief TODO
    */
   inline CSolver* GetSolver(unsigned short iZone, unsigned short iSolution) {
+    if (iZone >= nZone)
+      SU2_MPI::Error("Zone " + to_string(iZone) + " is out of bound", CURRENT_FUNCTION);
     return solver_container[iZone][INST_0][MESH_0][iSolution];
   }
 
   /*!
    * \brief TODO
    */
-  inline COutput* GetOutput() {
-    return output_container[MESH_0];
+  inline COutput* GetOutput(unsigned short iZone) {
+    if (iZone >= nZone)
+      SU2_MPI::Error("Zone " + to_string(iZone) + " is out of bound", CURRENT_FUNCTION);
+    return output_container[iZone];
   }
 
   /*!
    * \brief TODO
    */
-  virtual inline COutput* GetDirectOutput() {
-    return GetOutput();
-  }
+  virtual inline COutput* GetDriverOutput() { return driver_output; }
+
+  /*!
+   * \brief TODO
+   */
+  virtual inline COutput* GetDirectOutput(unsigned short iZone) { return GetOutput(iZone); }
 
   /*!
    * \brief TODO
