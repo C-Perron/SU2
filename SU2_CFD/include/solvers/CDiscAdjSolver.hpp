@@ -121,7 +121,8 @@ public:
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
+  void ExtractAdjoint_Solution(
+    CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode = false ) override;
 
   /*!
    * \brief Set the surface sensitivity.

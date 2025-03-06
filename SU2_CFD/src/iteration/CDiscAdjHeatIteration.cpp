@@ -146,11 +146,12 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolve
   }
 }
 
-void CDiscAdjHeatIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                           unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+void CDiscAdjHeatIteration::IterateDiscAdj(
+  CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+  unsigned short val_iInst, bool CrossTerm, bool KrylovMode) {
 
-  solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                             config[val_iZone], CrossTerm);
+  solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(
+    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], CrossTerm, KrylovMode);
 }
 
 void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,

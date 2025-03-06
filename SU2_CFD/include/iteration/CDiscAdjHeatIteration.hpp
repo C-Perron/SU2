@@ -86,7 +86,8 @@ class CDiscAdjHeatIteration final : public CIteration {
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
   void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) override;
+                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm,
+                      bool KrylovMode = false) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint heat problem.

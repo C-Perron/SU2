@@ -322,9 +322,11 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
   }
 }
 
-void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                            unsigned short iZone, unsigned short iInst, bool CrossTerm) {
-  auto solvers0 = solver[iZone][iInst][MESH_0];
+void CDiscAdjFluidIteration::IterateDiscAdj(
+  CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short iZone,
+  unsigned short iInst, bool CrossTerm, bool KrylovMode) {
+
+    auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
@@ -332,23 +334,23 @@ void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver*****
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
   if (config[iZone]->GetFluidProblem()) {
-    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm, KrylovMode);
 
-    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
+    if (!KrylovMode) solvers0[ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
   }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solvers0[ADJTURB_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+    solvers0[ADJTURB_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm, KrylovMode);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    solvers0[ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+    solvers0[ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm, KrylovMode);
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solvers0[ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+    solvers0[ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm, KrylovMode);
   }
   if (config[iZone]->AddRadiation()) {
-    solvers0[ADJRAD_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+    solvers0[ADJRAD_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm, KrylovMode);
 
-    solvers0[ADJRAD_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
+    if (!KrylovMode) solvers0[ADJRAD_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
   }
 
   }

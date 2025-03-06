@@ -3526,7 +3526,8 @@ public:
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
-  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
+  inline virtual void ExtractAdjoint_Solution(
+    CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode = false ){}
 
   /*!
    * \brief Register In- or Output.
