@@ -114,7 +114,8 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
   SU2_OMP_SAFE_GLOBAL_ACCESS(direct_solver->GetNodes()->Register_BoundDisp();)
 }
 
-void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
+void CDiscAdjMeshSolver::ExtractAdjoint_Solution(
+  CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode){
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 

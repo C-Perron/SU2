@@ -222,7 +222,8 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 }
 
-void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+void CDiscAdjFEASolver::ExtractAdjoint_Solution(
+  CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode) {
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
@@ -242,7 +243,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   AD::EndUseAdjoints();
 
-  if (CrossTerm) return;
+  if (CrossTerm || KrylovMode) return;
 
   /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 

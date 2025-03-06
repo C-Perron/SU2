@@ -451,7 +451,8 @@ bool CDiscAdjKrylovSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
-  iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false);
+  iteration->IterateDiscAdj(geometry_container, solver_container, config_container,
+                            ZONE_0, INST_0, false, true);
 
   GetAllSolutionsNeg(ZONE_0, true, rhs);
 
@@ -550,7 +551,7 @@ bool CDiscAdjKrylovSinglezoneDriver::Iterate(unsigned long iInnerIter, bool Kryl
   /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
   iteration->IterateDiscAdj(geometry_container, solver_container,
-                            config_container, ZONE_0, INST_0, false);
+                            config_container, ZONE_0, INST_0, false, KrylovMode);
 
   /*--- Monitor the pseudo-time ---*/
 

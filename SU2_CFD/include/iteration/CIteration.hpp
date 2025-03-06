@@ -153,7 +153,8 @@ class CIteration {
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
   virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {}
+                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm,
+                              bool KrylovMode = false) {}
 
   /*!
    * \brief A virtual member.
