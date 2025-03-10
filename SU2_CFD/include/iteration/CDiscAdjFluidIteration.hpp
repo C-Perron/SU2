@@ -91,9 +91,8 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] val_iInst - Index of the instance.
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm,
-                      bool KrylovMode = false) override;
+  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                      unsigned short val_iInst, bool CrossTerm, bool KrylovMode = false) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
@@ -123,7 +122,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] iInst - Index of the instance.
    */
   void InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                         unsigned short iInst) override;
+                         unsigned short iInst, bool addExternal = true) override;
 
   /*!
    * \brief Registers all output variables of the fluid iteration.

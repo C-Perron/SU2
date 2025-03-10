@@ -440,17 +440,32 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 }
 
 bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
-
-  /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
+  /*--- Clear adjoint variables ---*/
 
   AD::ClearAdjoints();
+
+  /*--- Using the rhs vector, sett all adjoint solutions to zero ---*/
+
+  rhs = 0.0;
+  SetAllSolutions(ZONE_0, true, rhs);
+
+  /*--- Initialize the adjoint variables with external terms only ---*/
+
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0, true);
+
+  /*--- Set the adjoint of the objective function ---*/
+
   SetAdjObjFunction();
+
+  /*--- Compute adjoint ---*/
+
   AD::ComputeAdjoint();
 
-  /*--- Initialize External with the objective function gradient. ---*/
+  /*--- Extract the resulting adjoint solution ---*/
 
-  iteration->IterateDiscAdj(geometry_container, solver_container, config_container,
-                            ZONE_0, INST_0, false, true);
+  iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false, true);
+
+  /*--- Set the RHS as the negative of the adjoint soltion (derivative w.r.t. external terms and OF) ---*/
 
   GetAllSolutionsNeg(ZONE_0, true, rhs);
 
@@ -458,7 +473,6 @@ bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 }
 
 void CDiscAdjSinglezoneDriver::RunKrylov() {
-
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
   const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
@@ -473,7 +487,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
   if (zeroGrad && !config->GetTime_Domain()) {
     if (rank == MASTER_NODE) {
-      cout << "\nThe gradient of the objective function is numerically 0.";
+      cout << "\nThe RHS of the adjoint problem is numerically 0.";
       cout << "\nThis implies that the adjoint variables are also 0.\n\n";
     }
     AdjSol = 0.0;
@@ -484,51 +498,60 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   const auto product = AdjointProductWrapper(this);
   const auto precon = IdentityPreconditioner();
 
-
   LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
 
-  StopCalc = Iterate(0, false);
-  if (StopCalc) return;
+  /*--- Store the current adjoint solution ---*/
+  GetAllSolutions(ZONE_0, true, AdjSol);
 
   for (auto Adjoint_Iter = 1ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+    /*--- Run a fixed-point iteration to compute the residuals ---*/
 
-    GetAllSolutions(ZONE_0, true, AdjSol);
+    StopCalc = Iterate(Adjoint_Iter, false);
+
+    /*--- Restore adjoint solution bc the fixed-point iteration modified it ---*/
+
+    SetAllSolutions(ZONE_0, true, AdjSol);
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (!config->GetTime_Domain()) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, Adjoint_Iter,
+                        false, ZONE_0, INST_0);
+    }
+
+    if (StopCalc) break;
+
+    /*--- Run Krylov solver to improve adjoint solution ---*/
 
     Scalar eps_l = 0.0;
     Scalar tol_l = SU2_TYPE::GetValue(config->GetDiscAdjKrylovError());
     unsigned short iter = config->GetDiscAdjKrylovIter();
 
-    switch (config->GetKindDiscAdjKrylov())
-    {
-    case BCGSTAB:
-      iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon,
-                                         tol_l, iter, eps_l, true, config);
-      break;
-    default:
-      iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon,
-                                        tol_l, iter, eps_l, true, config);
-      break;
+    switch (config->GetKindDiscAdjKrylov()) {
+      case BCGSTAB:
+        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        break;
+      case FGMRES:
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        break;
+      case RESTARTED_FGMRES:
+        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        break;
+      default:
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        break;
     }
+
+    /*--- Update adjoint solution with Krylov solver results ---*/
 
     SetAllSolutions(ZONE_0, true, AdjSol);
-
-    StopCalc = Iterate(Adjoint_Iter, false);
-
-    /*--- Output files for steady state simulations. ---*/
-
-    if (!config->GetTime_Domain()) {
-      iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
-    }
-
-    if (StopCalc) break;
-
   }
 }
 
 bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode) {
 
   config->SetInnerIter(iInnerIter);
+  const bool addExternal = !KrylovMode;
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
@@ -537,7 +560,7 @@ bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *--- of the previous iteration. The values are passed to the AD tool.
    *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
-  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0, addExternal);
 
   if (KrylovMode) {
     AD::ComputeAdjoint();
@@ -548,15 +571,13 @@ bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode
 
   /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-  iteration->IterateDiscAdj(geometry_container, solver_container,
-                            config_container, ZONE_0, INST_0, false, KrylovMode);
+  iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false, KrylovMode);
 
   /*--- Monitor the pseudo-time ---*/
 
   if (KrylovMode) return false;
 
-  return iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                            solver_container, numerics_container, config_container,
-                            surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
+  return iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+                            numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
+                            INST_0);
 }

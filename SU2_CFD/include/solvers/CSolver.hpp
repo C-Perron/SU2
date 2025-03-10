@@ -3517,7 +3517,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  inline virtual void SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
+  inline virtual void SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal = true) {}
 
   /*!
    * \brief A virtual member.
@@ -3526,8 +3526,8 @@ public:
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
-  inline virtual void ExtractAdjoint_Solution(
-    CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode = false ){}
+  inline virtual void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm,
+                                              bool KrylovMode = false) {}
 
   /*!
    * \brief Register In- or Output.

@@ -89,8 +89,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(
-    CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode = false ) override;
+  void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm, bool KrylovMode = false) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.

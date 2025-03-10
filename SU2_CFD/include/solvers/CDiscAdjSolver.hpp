@@ -112,7 +112,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_Output(CGeometry *geometry, CConfig *config) override;
+  void SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal = true) override;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -121,8 +121,7 @@ public:
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void ExtractAdjoint_Solution(
-    CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode = false ) override;
+  void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm, bool KrylovMode = false) override;
 
   /*!
    * \brief Set the surface sensitivity.
