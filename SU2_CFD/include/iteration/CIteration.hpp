@@ -152,9 +152,8 @@ class CIteration {
    * \param[in] val_iInst - Index of the instantiation.
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm,
-                              bool KrylovMode = false) {}
+  virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                              unsigned short val_iInst, bool CrossTerm, bool KrylovMode = false) {}
 
   /*!
    * \brief A virtual member.
@@ -286,7 +285,7 @@ class CIteration {
                            unsigned short val_iInst) {}
 
   virtual void InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                                 unsigned short iInst) {}
+                                 unsigned short iInst, bool addExternal = true) {}
 
   virtual void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
                              unsigned short iInst, RECORDING kind_recording) {}

@@ -271,12 +271,13 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
 }
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                             unsigned short iZone, unsigned short iInst) {
+                                             unsigned short iZone, unsigned short iInst, bool addExternal) {
   /*--- Initialize the adjoints the conservative variables ---*/
 
   AD::ResizeAdjoints();
   AD::BeginUseAdjoints();
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone],
+                                                              addExternal);
   AD::EndUseAdjoints();
 }
 
