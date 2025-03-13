@@ -115,17 +115,17 @@ void CDriver::SetFarFieldMach(const passivedouble Mach) {
 
   // Don't do anything if not compressible flow
   if (
-    (config_container[ZONE_0]->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) ||
-    (config_container[ZONE_0]->GetBoolTurbomachinery())
+    (config_container[selected_zone]->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) ||
+    (config_container[selected_zone]->GetBoolTurbomachinery())
   ) {
     return;
   }
 
-  const su2double Mach_old = config_container[ZONE_0]->GetMach();
+  const su2double Mach_old = config_container[selected_zone]->GetMach();
 
   su2double ModVel, ModVelND;
-  su2double *Velocity = config_container[ZONE_0]->GetVelocity_FreeStream();
-  su2double *VelocityND = config_container[ZONE_0]->GetVelocity_FreeStreamND();
+  su2double *Velocity = config_container[selected_zone]->GetVelocity_FreeStream();
+  su2double *VelocityND = config_container[selected_zone]->GetVelocity_FreeStreamND();
 
   // Velocity is shared with the flow solver
   for (auto i=0; i<nDim; i++) {
@@ -136,9 +136,9 @@ void CDriver::SetFarFieldMach(const passivedouble Mach) {
   ModVel = GeometryToolbox::Norm(nDim, Velocity);
   ModVelND = GeometryToolbox::Norm(nDim, VelocityND);
 
-  config_container[ZONE_0]->SetMach(Mach);
-  config_container[ZONE_0]->SetModVel_FreeStream(ModVel);
-  config_container[ZONE_0]->SetModVel_FreeStreamND(ModVelND);
+  config_container[selected_zone]->SetMach(Mach);
+  config_container[selected_zone]->SetModVel_FreeStream(ModVel);
+  config_container[selected_zone]->SetModVel_FreeStreamND(ModVelND);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
