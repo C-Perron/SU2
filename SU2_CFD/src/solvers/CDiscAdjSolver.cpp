@@ -225,6 +225,11 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
 
+    config->SetAoA(Alpha * 180.0 / PI_NUMBER);
+    config->SetAoS(Beta * 180.0 / PI_NUMBER);
+    config->SetMach(Mach);
+
+    config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
     direct_solver->SetPressure_Inf(Pressure);
   }
