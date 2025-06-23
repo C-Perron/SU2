@@ -124,26 +124,33 @@ protected:
   inline bool GetTimeConvergence() const override { return false; }
 
   /*!
-   * \brief TODO
+   * \brief Get RHS vector for the discrete adjoint problem
    */
   bool GetAdjointRHS(CSysVector<Scalar>& rhs);
 
   /*!
-   * \brief TODO
+   * \brief Run driver with a Krylov solver
    */
   void RunKrylov(void);
 
   /*!
-   * \brief TODO
+   * \brief Run driver with a fixed-point method
    */
   void RunFixedPoint(void);
+
   /*!
-   * \brief TODO
+   * \brief Iterate the discrete adjoint problem
+   * \param[in] iInnerIter - Current inner iteration
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver
    */
   bool Iterate(unsigned long iInnerIter, bool KrylovMode);
 
   /*!
-   * \brief TODO
+   * \brief Get the negative solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[in] solution - Solution object with interface (iPoint,iVar).
+   * \tparam Old - If true set "old solutions" instead.
    */
   template <class Container>
   void GetAllSolutionsNeg(unsigned short iZone, bool adjoint, Container& solution) const {
