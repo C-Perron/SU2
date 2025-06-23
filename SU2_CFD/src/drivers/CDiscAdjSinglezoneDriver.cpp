@@ -503,7 +503,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   /*--- Store the current adjoint solution ---*/
   GetAllSolutions(ZONE_0, true, AdjSol);
 
-  for (auto Adjoint_Iter = 1ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
     /*--- Run a fixed-point iteration to compute the residuals ---*/
 
     StopCalc = Iterate(Adjoint_Iter, false);
@@ -526,19 +526,20 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     Scalar eps_l = 0.0;
     Scalar tol_l = SU2_TYPE::GetValue(config->GetDiscAdjKrylovError());
     unsigned short iter = config->GetDiscAdjKrylovIter();
+    bool monitoring = config->GetDiscAdjKrylovMonitor();
 
     switch (config->GetKindDiscAdjKrylov()) {
       case BCGSTAB:
-        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
         break;
       case FGMRES:
-        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
         break;
       case RESTARTED_FGMRES:
-        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
         break;
       default:
-        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, true, config);
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
         break;
     }
 
