@@ -1768,6 +1768,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("DISCADJ_KRYLOV_ITER", DiscAdjKrylovIter, 10);
   /* DESCRIPTION: Min error of the Krylov solver iteration before iterating the main solver. */
   addDoubleOption("DISCADJ_KRYLOV_ERROR", DiscAdjKrylovError, 1e-6);
+  /* DESCRIPTION: Whether to output the Krylov solver residual to the console.*/
+  addBoolOption("DISCADJ_KRYLOV_MONITOR", DiscAdjKrylovMonitor, false);
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);

@@ -436,6 +436,7 @@ private:
   unsigned short KindDiscAdjKrylov;
   unsigned short DiscAdjKrylovIter;
   su2double DiscAdjKrylovError;
+  bool DiscAdjKrylovMonitor;
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -4389,6 +4390,11 @@ public:
    * \brief TODO.
    */
   su2double GetDiscAdjKrylovError(void) const { return DiscAdjKrylovError; }
+
+  /*!
+   * \brief TODO.
+   */
+  bool GetDiscAdjKrylovMonitor(void) const { return DiscAdjKrylovMonitor; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
