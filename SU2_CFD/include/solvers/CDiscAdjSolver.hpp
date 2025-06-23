@@ -111,6 +111,7 @@ public:
    *        before evaluation of the tape.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
+   * \param[in] addExternal - Add dual time contributions to the adjoint solution.
    */
   void SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal = true) override;
 
@@ -120,6 +121,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean for CrossTerm.
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver.
    */
   void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm, bool KrylovMode = false) override;
 

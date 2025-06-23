@@ -3516,6 +3516,7 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
+   * \param[in] addExternal - Add dual time contributions to the adjoint solution.
    */
   inline virtual void SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal = true) {}
 
@@ -3525,6 +3526,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm,
                                               bool KrylovMode = false) {}

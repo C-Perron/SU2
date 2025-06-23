@@ -151,6 +151,7 @@ class CIteration {
    * \param[in] val_iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instantiation.
    * \param[in] CrossTerm - Boolean for CrossTerm.
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver.
    */
   virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
                               unsigned short val_iInst, bool CrossTerm, bool KrylovMode = false) {}
