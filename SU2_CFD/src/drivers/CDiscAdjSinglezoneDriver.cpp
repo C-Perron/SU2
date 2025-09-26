@@ -476,12 +476,21 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
   const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
+  const auto product = AdjointProductWrapper(this);
+  const auto precon = IdentityPreconditioner();
 
   CSysSolve<Scalar> LinSolver;
   CSysVector<Scalar> AdjRHS, AdjSol;
 
   AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
   AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+  LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+
+  /*--- Store the current adjoint solution as the initial guess ---*/
+
+  GetAllSolutions(ZONE_0, true, AdjSol);
+
+  /*--- Compute the RHS and check for trivial solution ---*/
 
   const auto zeroGrad = GetAdjointRHS(AdjRHS);
 
@@ -495,31 +504,25 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     return;
   }
 
-  const auto product = AdjointProductWrapper(this);
-  const auto precon = IdentityPreconditioner();
+  /*--- Perform fixed-point itration for iteration 0 ---*/
 
-  LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+  // Set adj solution to initial guess
+  SetAllSolutions(ZONE_0, true, AdjSol);
+  // Perform fixed-point
+  StopCalc = Iterate(0, false);
+  // Restore adj solution bc it was modified
+  SetAllSolutions(ZONE_0, true, AdjSol);
+  // Print initial residuals
+  if (!config->GetTime_Domain()) {
+    iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, 0,
+                      false, ZONE_0, INST_0);
+  }
+  // Stop here if solution is already converged
+  if (StopCalc) return;
 
-  /*--- Store the current adjoint solution ---*/
-  GetAllSolutions(ZONE_0, true, AdjSol);
+  /*--- Main iteration loop ---*/
 
-  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
-    /*--- Run a fixed-point iteration to compute the residuals ---*/
-
-    StopCalc = Iterate(Adjoint_Iter, false);
-
-    /*--- Restore adjoint solution bc the fixed-point iteration modified it ---*/
-
-    SetAllSolutions(ZONE_0, true, AdjSol);
-
-    /*--- Output files for steady state simulations. ---*/
-
-    if (!config->GetTime_Domain()) {
-      iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, Adjoint_Iter,
-                        false, ZONE_0, INST_0);
-    }
-
-    if (StopCalc) break;
+  for (auto Adjoint_Iter = 1ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
     /*--- Run Krylov solver to improve adjoint solution ---*/
 
@@ -546,6 +549,23 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     /*--- Update adjoint solution with Krylov solver results ---*/
 
     SetAllSolutions(ZONE_0, true, AdjSol);
+
+    /*--- Run a fixed-point iteration to compute the residuals ---*/
+
+    StopCalc = Iterate(Adjoint_Iter, false);
+
+    /*--- Restore adjoint solution bc the fixed-point iteration modified it ---*/
+
+    SetAllSolutions(ZONE_0, true, AdjSol);
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (!config->GetTime_Domain()) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, Adjoint_Iter,
+                        false, ZONE_0, INST_0);
+    }
+
+    if (StopCalc) break;
   }
 }
 

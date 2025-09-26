@@ -145,27 +145,6 @@ protected:
    */
   bool Iterate(unsigned long iInnerIter, bool KrylovMode);
 
-  /*!
-   * \brief Get the negative solution of all solvers (adjoint or primal) in a zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \param[in] solution - Solution object with interface (iPoint,iVar).
-   * \tparam Old - If true set "old solutions" instead.
-   */
-  template <class Container>
-  void GetAllSolutionsNeg(unsigned short iZone, bool adjoint, Container& solution) const {
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
-      const auto& sol = solver->GetNodes()->GetSolution();
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solution(iPoint, offset + iVar) = -SU2_TYPE::GetValue(sol(iPoint, iVar));
-      offset += solver->GetnVar();
-    }
-  }
-
 public:
 
   /*!
