@@ -28,6 +28,8 @@
 
 #pragma once
 #include "CSinglezoneDriver.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 
 /*!
  * \class CDiscAdjSinglezoneDriver
@@ -38,6 +40,34 @@
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
+
+protected:
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+  class AdjointProductWrapper : public CMatrixVectorProduct<Scalar> {
+  public:
+    CDiscAdjSinglezoneDriver* const driver;
+    mutable unsigned long iInnerIter = 0;
+
+    AdjointProductWrapper(CDiscAdjSinglezoneDriver* d) : driver(d) {}
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+      driver->SetAllSolutions(ZONE_0, true, u);
+      driver->Iterate(iInnerIter, true);
+      driver->GetAllSolutions(ZONE_0, true, v);
+      v -= u;
+      ++iInnerIter;
+    }
+  };
+
+  class IdentityPreconditioner : public CPreconditioner<Scalar> {
+  public:
+    inline bool IsIdentity() const override { return true; }
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+  };
 
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
@@ -92,6 +122,49 @@ protected:
    * \return false
    */
   inline bool GetTimeConvergence() const override { return false; }
+
+  /*!
+   * \brief Get RHS vector for the discrete adjoint problem
+   */
+  bool GetAdjointRHS(CSysVector<Scalar>& rhs);
+
+  /*!
+   * \brief Run driver with a Krylov solver
+   */
+  void RunKrylov(void);
+
+  /*!
+   * \brief Run driver with a fixed-point method
+   */
+  void RunFixedPoint(void);
+
+  /*!
+   * \brief Iterate the discrete adjoint problem
+   * \param[in] iInnerIter - Current inner iteration
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver
+   */
+  bool Iterate(unsigned long iInnerIter, bool KrylovMode);
+
+  /*!
+   * \brief Get the negative solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[in] solution - Solution object with interface (iPoint,iVar).
+   * \tparam Old - If true set "old solutions" instead.
+   */
+  template <class Container>
+  void GetAllSolutionsNeg(unsigned short iZone, bool adjoint, Container& solution) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      const auto& sol = solver->GetNodes()->GetSolution();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solution(iPoint, offset + iVar) = -SU2_TYPE::GetValue(sol(iPoint, iVar));
+      offset += solver->GetnVar();
+    }
+  }
 
 public:
 

@@ -93,9 +93,10 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] val_iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instance.
    * \param[in] CrossTerm - Boolean for CrossTerm.
+   * \param[in] KrylovMode - Whether this is called from within a Krylov solver.
    */
-  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) override;
+  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                      unsigned short val_iInst, bool CrossTerm, bool KrylovMode = false) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint FEA problem.
@@ -165,9 +166,10 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the zone.
+   * \param[in] addExternal - Add dual time contributions to the adjoint solution.
    */
   void InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                         unsigned short iInst) override;
+                         unsigned short iInst, bool addExternal = true) override;
 
   /*!
    * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)

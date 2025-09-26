@@ -152,6 +152,11 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
+  if (config->GetDiscAdjKrylov()) RunKrylov();
+  else RunFixedPoint();
+}
+
+void CDiscAdjSinglezoneDriver::RunFixedPoint() {
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -169,32 +174,7 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetInnerIter(Adjoint_Iter);
-
-    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
-    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
-
-    SetAdjObjFunction();
-
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-
-    AD::ComputeAdjoint();
-
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-
-    iteration->IterateDiscAdj(geometry_container, solver_container,
-                              config_container, ZONE_0, INST_0, false);
-
-    /*--- Monitor the pseudo-time ---*/
-
-    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                  solver_container, numerics_container, config_container,
-                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-    AD::ClearAdjoints();
+    StopCalc = Iterate(Adjoint_Iter, false);
 
     /*--- Output files for steady state simulations. ---*/
 
@@ -332,6 +312,11 @@ void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
+
+  if (config->GetFluidProblem()) {
+    solver[FLOW_SOL]->SetVertexTractionsAdjoint(geometry, config);
+  }
+
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
@@ -372,6 +357,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
+  }
+
+  if (config->GetFluidProblem()) {
+    solver[FLOW_SOL]->RegisterVertexTractions(geometry, config);
   }
 
 }
@@ -448,4 +437,148 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
+  /*--- Clear adjoint variables ---*/
+
+  AD::ClearAdjoints();
+
+  /*--- Using the rhs vector, sett all adjoint solutions to zero ---*/
+
+  rhs = 0.0;
+  SetAllSolutions(ZONE_0, true, rhs);
+
+  /*--- Initialize the adjoint variables with external terms only ---*/
+
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0, true);
+
+  /*--- Set the adjoint of the objective function ---*/
+
+  SetAdjObjFunction();
+
+  /*--- Compute adjoint ---*/
+
+  AD::ComputeAdjoint();
+
+  /*--- Extract the resulting adjoint solution ---*/
+
+  iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false, true);
+
+  /*--- Set the RHS as the negative of the adjoint soltion (derivative w.r.t. external terms and OF) ---*/
+
+  GetAllSolutionsNeg(ZONE_0, true, rhs);
+
+  return rhs.norm() < EPS;
+}
+
+void CDiscAdjSinglezoneDriver::RunKrylov() {
+  const auto nPoint = geometry->GetnPoint();
+  const auto nPointDomain = geometry->GetnPointDomain();
+  const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
+
+  CSysSolve<Scalar> LinSolver;
+  CSysVector<Scalar> AdjRHS, AdjSol;
+
+  AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
+  AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+
+  const auto zeroGrad = GetAdjointRHS(AdjRHS);
+
+  if (zeroGrad && !config->GetTime_Domain()) {
+    if (rank == MASTER_NODE) {
+      cout << "\nThe RHS of the adjoint problem is numerically 0.";
+      cout << "\nThis implies that the adjoint variables are also 0.\n\n";
+    }
+    AdjSol = 0.0;
+    SetAllSolutions(ZONE_0, true, AdjSol);
+    return;
+  }
+
+  const auto product = AdjointProductWrapper(this);
+  const auto precon = IdentityPreconditioner();
+
+  LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+
+  /*--- Store the current adjoint solution ---*/
+  GetAllSolutions(ZONE_0, true, AdjSol);
+
+  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+    /*--- Run a fixed-point iteration to compute the residuals ---*/
+
+    StopCalc = Iterate(Adjoint_Iter, false);
+
+    /*--- Restore adjoint solution bc the fixed-point iteration modified it ---*/
+
+    SetAllSolutions(ZONE_0, true, AdjSol);
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (!config->GetTime_Domain()) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, Adjoint_Iter,
+                        false, ZONE_0, INST_0);
+    }
+
+    if (StopCalc) break;
+
+    /*--- Run Krylov solver to improve adjoint solution ---*/
+
+    Scalar eps_l = 0.0;
+    Scalar tol_l = SU2_TYPE::GetValue(config->GetDiscAdjKrylovError());
+    unsigned short iter = config->GetDiscAdjKrylovIter();
+    bool monitoring = config->GetDiscAdjKrylovMonitor();
+
+    switch (config->GetKindDiscAdjKrylov()) {
+      case BCGSTAB:
+        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        break;
+      case FGMRES:
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        break;
+      case RESTARTED_FGMRES:
+        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        break;
+      default:
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        break;
+    }
+
+    /*--- Update adjoint solution with Krylov solver results ---*/
+
+    SetAllSolutions(ZONE_0, true, AdjSol);
+  }
+}
+
+bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode) {
+
+  config->SetInnerIter(iInnerIter);
+  const bool addExternal = !KrylovMode;
+
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  AD::ClearAdjoints();
+
+  /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *--- of the previous iteration. The values are passed to the AD tool.
+   *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0, addExternal);
+
+  if (KrylovMode) {
+    AD::ComputeAdjoint();
+  } else {
+    SetAdjObjFunction();
+    AD::ComputeAdjoint();
+  }
+
+  /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+
+  iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false, KrylovMode);
+
+  /*--- Monitor the pseudo-time ---*/
+
+  if (KrylovMode) return false;
+
+  return iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+                            numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
+                            INST_0);
 }

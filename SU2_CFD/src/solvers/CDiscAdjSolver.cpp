@@ -343,7 +343,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->RegisterSolutionExtra(false, config);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+void CDiscAdjSolver::ExtractAdjoint_Solution(
+  CGeometry *geometry, CConfig *config, bool CrossTerm, bool KrylovMode) {
 
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
@@ -356,7 +357,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution and compute residuals. ---*/
 
-  if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
+  if (!config->GetMultizone_Problem() && !KrylovMode) nodes->Set_OldSolution();
 
   AD::BeginUseAdjoints();
 
@@ -367,6 +368,13 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+
+    /*--- If called within Krylov solver, update solution directly ---*/
+
+    if (KrylovMode) {
+      nodes->SetSolution(iPoint, Solution);
+      continue;
+    }
 
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
@@ -387,7 +395,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
-  if (CrossTerm) return;
+  if (CrossTerm || KrylovMode) return;
 
   /*--- "Add" residuals from all threads to global residual variables. ---*/
   ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
@@ -524,7 +532,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                           config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -542,7 +550,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
-    if (dual_time && !multizone) {
+    if (dual_time && !multizone && addExternal) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }

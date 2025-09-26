@@ -222,7 +222,7 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 }
 
-void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, bool CrossTerm, bool KrylovMode) {
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
@@ -242,7 +242,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   AD::EndUseAdjoints();
 
-  if (CrossTerm) return;
+  if (CrossTerm || KrylovMode) return;
 
   /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
@@ -275,7 +275,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   SetIterLinSolver(direct_solver->System.GetIterations());
   SetResLinSolver(direct_solver->System.GetResidual());
-
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
@@ -304,7 +303,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
 }
 
-void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry* geometry, CConfig* config, bool addExternal) {
 
   const bool dynamic = config->GetTime_Domain();
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
@@ -318,12 +317,12 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
 
-    if (dynamic && !multizone) {
+    if (dynamic && !multizone && addExternal) {
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
     }
 
-    if (deform_mesh) {
+    if (deform_mesh && addExternal) {
       for (iVar = 0; iVar < nDim; iVar++)
         Solution[iVar] += nodes->GetSourceTerm_DispAdjoint(iPoint,iVar);
 
