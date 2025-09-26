@@ -441,6 +441,13 @@ private:
   array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
   su2double NK_Relaxation = 1.0;
 
+  /* Discrete Adjoint with Krylov Solver - options */
+  bool DiscAdjKrylov;                 /*!< \brief Whether to use Krylov Solver for Discrete Adjoint problem. */
+  unsigned short KindDiscAdjKrylov;   /*!< \brief Kind of Krylov solver for Discrete Adjoint problem. */
+  unsigned short DiscAdjKrylovIter;   /*!< \brief Number of Krylov solver iterations for Discrete Adjoint problem. */
+  su2double DiscAdjKrylovError;       /*!< \brief Krylov solver tolerance for Discrete Adjoint problem. */
+  bool DiscAdjKrylovMonitor;          /*!< \brief Whether to monitor Krylov solver outputs for Discrete Adjoint problem. */
+
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
   su2double
@@ -4469,6 +4476,31 @@ public:
    * \brief Returns the MSW alpha (coefficient of the state blending weight).
    */
   su2double GetMSW_Alpha(void) const { return MSW_Alpha; }
+
+  /*!
+   * \brief Get wheter touse a Krylov solver for the discrete adjoint problem.
+   */
+  bool GetDiscAdjKrylov(void) const { return DiscAdjKrylov; }
+
+  /*!
+   * \brief Get kind of Krylov solver to use for the discrete adjoint problem.
+   */
+  unsigned short GetKindDiscAdjKrylov(void) const { return KindDiscAdjKrylov; }
+
+  /*!
+   * \brief Get Krylov solver iteration limit for the discrete adjoint problem.
+   */
+  unsigned short GetDiscAdjKrylovIter(void) const { return DiscAdjKrylovIter; }
+
+  /*!
+   * \brief Get Krylov solver tolerance for the discrete adjoint problem.
+   */
+  su2double GetDiscAdjKrylovError(void) const { return DiscAdjKrylovError; }
+
+  /*!
+   * \brief Get wether to monitor Krylov solver outputs for the discrete adjoint problem.
+   */
+  bool GetDiscAdjKrylovMonitor(void) const { return DiscAdjKrylovMonitor; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).

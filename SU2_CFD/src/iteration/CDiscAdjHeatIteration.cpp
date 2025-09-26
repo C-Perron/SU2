@@ -149,22 +149,24 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolve
 }
 
 void CDiscAdjHeatIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                           unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+                                           unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm,
+                                           bool KrylovMode) {
   SU2_ZONE_SCOPED
 
   solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                             config[val_iZone], CrossTerm);
+                                                                             config[val_iZone], CrossTerm, KrylovMode);
 }
 
 void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                              unsigned short iZone, unsigned short iInst) {
+                                              unsigned short iZone, unsigned short iInst, bool addExternal) {
   SU2_ZONE_SCOPED
 
   /*--- Initialize the adjoints the solution variables ---*/
 
   AD::ResizeAdjoints();
   AD::BeginUseAdjoints();
-  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone],
+                                                               addExternal);
   AD::EndUseAdjoints();
 }
 

@@ -127,14 +127,14 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
 }
 
 void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+                                          unsigned short iZone, unsigned short iInst, bool CrossTerm, bool KrylovMode) {
   SU2_ZONE_SCOPED
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
   for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
     if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
-      sol->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
-      sol->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      sol->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm, KrylovMode);
+      if (!KrylovMode) sol->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
   }
 }
@@ -295,7 +295,7 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
 }
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                             unsigned short iZone, unsigned short iInst) {
+                                             unsigned short iZone, unsigned short iInst, bool addExternal) {
   SU2_ZONE_SCOPED
   /*--- Initialize the adjoints of the solution variables. ---*/
 
@@ -303,7 +303,7 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** 
   AD::BeginUseAdjoints();
   for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
     if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
-      sol->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+      sol->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone], addExternal);
     }
   }
   AD::EndUseAdjoints();
