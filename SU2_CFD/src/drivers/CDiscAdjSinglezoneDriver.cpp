@@ -367,6 +367,23 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
+  /*--- Simplify linear solver ---*/
+
+  /*--- The recording of one iteration of the direct problem does not require a full
+   *--- convergence of the linear solver. Therefore, we set the linear solver
+   *--- to a single smoother iteration. After the recording, the original settings
+   *--- are restored. ---*/
+
+  const auto kindSolver = config->GetKind_Linear_Solver();
+  const auto linTol = config->GetLinear_Solver_Error();
+  const auto linMaxIter = config->GetLinear_Solver_Iter();
+  const auto kindSolverInner = config->GetKind_Linear_Solver_Inner();
+
+  config->SetKind_Linear_Solver(SMOOTHER);
+  config->SetLinear_Solver_Error(0.0);
+  config->SetLinear_Solver_Iter(1);
+  config->SetKind_Linear_Solver_Inner(LINEAR_SOLVER_INNER::NONE);
+
   /*--- Mesh movement ---*/
 
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
@@ -386,6 +403,13 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
   /*--- Print the direct residual to screen ---*/
 
   PrintDirectResidual(kind_recording);
+
+  /*--- Restore linear solver settings ---*/
+
+  config->SetKind_Linear_Solver(kindSolver);
+  config->SetLinear_Solver_Error(linTol);
+  config->SetLinear_Solver_Iter(linMaxIter);
+  config->SetKind_Linear_Solver_Inner(kindSolverInner);
 
 }
 
