@@ -327,8 +327,9 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 
 }
 
-
-bool CAdjFlowCompOutput::SetInitResiduals(const CConfig *config) {
+bool CAdjFlowCompOutput::SetInitResiduals(const CConfig* config) {
+  // NOTE: Verify why this is not the default behavior in the primal case
+  if (config->GetDiscAdjKrylov()) return curInnerIter == 0;
 
   return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
          ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));
