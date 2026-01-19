@@ -442,10 +442,8 @@ private:
 
   /* Discrete Adjoint with Krylov Solver - options */
   bool DiscAdjKrylov;                 /*!< \brief Whether to use Krylov Solver for Discrete Adjoint problem. */
-  unsigned short KindDiscAdjKrylov;   /*!< \brief Kind of Krylov solver for Discrete Adjoint problem. */
-  unsigned short DiscAdjKrylovIter;   /*!< \brief Number of Krylov solver iterations for Discrete Adjoint problem. */
-  su2double DiscAdjKrylovError;       /*!< \brief Krylov solver tolerance for Discrete Adjoint problem. */
   bool DiscAdjKrylovMonitor;          /*!< \brief Whether to monitor Krylov solver outputs for Discrete Adjoint problem. */
+  unsigned short DiscAdjKrylovSmooth; /*!< \brief Number of smoothing iteration in direct solver. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -4313,9 +4311,19 @@ public:
   unsigned short GetKind_Linear_Solver(void) const { return Kind_Linear_Solver; }
 
   /*!
+   * \brief Set the kind of solver for the implicit solver.
+   */
+  void SetKind_Linear_Solver(unsigned short kind) { Kind_Linear_Solver = kind; }
+
+  /*!
    * \brief Get the inner linear solver used in nested Krylov linear solvers.
    */
   LINEAR_SOLVER_INNER GetKind_Linear_Solver_Inner(void) const { return Kind_Linear_Solver_Inner; }
+
+  /*!
+   * \brief Set the inner linear solver used in nested Krylov linear solvers.
+   */
+  void SetKind_Linear_Solver_Inner(LINEAR_SOLVER_INNER kind) { Kind_Linear_Solver_Inner = kind; }
 
   /*!
    * \brief Get the kind of preconditioner for the implicit solver.
@@ -4336,6 +4344,11 @@ public:
   su2double GetLinear_Solver_Error(void) const { return Linear_Solver_Error; }
 
   /*!
+   * \brief Set min error of the linear solver for the implicit formulation.
+   */
+  void SetLinear_Solver_Error(su2double tol) { Linear_Solver_Error = tol; }
+
+  /*!
    * \brief Get min error of the linear solver for the implicit formulation.
    * \return Min error of the linear solver for the implicit formulation.
    */
@@ -4346,6 +4359,11 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void) const { return Linear_Solver_Iter; }
+
+  /*!
+   * \brief Set max number of iterations of the linear solver for the implicit formulation.
+   */
+  void SetLinear_Solver_Iter(unsigned long maxIter) { Linear_Solver_Iter = maxIter; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
@@ -4441,29 +4459,19 @@ public:
   void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
 
   /*!
-   * \brief Get wheter touse a Krylov solver for the discrete adjoint problem.
+   * \brief Get wheter to use a Krylov solver for the discrete adjoint problem.
    */
   bool GetDiscAdjKrylov(void) const { return DiscAdjKrylov; }
-
-  /*!
-   * \brief Get kind of Krylov solver to use for the discrete adjoint problem.
-   */
-  unsigned short GetKindDiscAdjKrylov(void) const { return KindDiscAdjKrylov; }
-
-  /*!
-   * \brief Get Krylov solver iteration limit for the discrete adjoint problem.
-   */
-  unsigned short GetDiscAdjKrylovIter(void) const { return DiscAdjKrylovIter; }
-
-  /*!
-   * \brief Get Krylov solver tolerance for the discrete adjoint problem.
-   */
-  su2double GetDiscAdjKrylovError(void) const { return DiscAdjKrylovError; }
 
   /*!
    * \brief Get wether to monitor Krylov solver outputs for the discrete adjoint problem.
    */
   bool GetDiscAdjKrylovMonitor(void) const { return DiscAdjKrylovMonitor; }
+
+  /*!
+   * \brief Get the number of smoothing iteration for the discrete adjoint krylov solver.
+   */
+  unsigned short GetDiscAdjKrylovSmooth(void) const { return DiscAdjKrylovSmooth; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).

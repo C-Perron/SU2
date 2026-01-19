@@ -473,6 +473,26 @@ bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 }
 
 void CDiscAdjSinglezoneDriver::RunKrylov() {
+
+  /*--- Force SMOOTHER as linear solver ---*/
+
+  /*--- Solving the discrete adjoint problem using a Krylov method requires the fixed-point
+   *--- iterator to only use linear operations. Therefore, we set the linear solver to SMOOTHER
+   *--- with a fixed number of iterations. The original settings are restored afterward. ---*/
+
+  const auto kindSolver = config->GetKind_Linear_Solver();
+  const auto linTol = config->GetLinear_Solver_Error();
+  const auto linMaxIter = config->GetLinear_Solver_Iter();
+  const auto kindSolverInner = config->GetKind_Linear_Solver_Inner();
+
+  config->SetKind_Linear_Solver(SMOOTHER);
+  config->SetLinear_Solver_Error(0.0);
+  config->SetKind_Linear_Solver_Inner(LINEAR_SOLVER_INNER::NONE);
+
+  config->SetLinear_Solver_Iter(max(static_cast<unsigned short>(1), config->GetDiscAdjKrylovSmooth()));
+
+  /*--- Setup linear discrete adjoint problem ---*/
+
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
   const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
@@ -526,23 +546,28 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
     /*--- Run Krylov solver to improve adjoint solution ---*/
 
-    Scalar eps_l = 0.0;
-    Scalar tol_l = SU2_TYPE::GetValue(config->GetDiscAdjKrylovError());
-    unsigned short iter = config->GetDiscAdjKrylovIter();
+    Scalar res = 0.0;
+    Scalar tol = SU2_TYPE::GetValue(linTol);
     bool monitoring = config->GetDiscAdjKrylovMonitor();
 
-    switch (config->GetKindDiscAdjKrylov()) {
+    switch (kindSolver) {
       case BCGSTAB:
-        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       case FGMRES:
-        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       case RESTARTED_FGMRES:
-        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        break;
+      case FGCRODR:
+        LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
+        break;
+      case SMOOTHER:
+        LinSolver.Smoother_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       default:
-        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol_l, iter, eps_l, monitoring, config);
+        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
     }
 
@@ -567,6 +592,14 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
     if (StopCalc) break;
   }
+
+  /*--- Restore linear solver settings ---*/
+
+  config->SetKind_Linear_Solver(kindSolver);
+  config->SetLinear_Solver_Error(linTol);
+  config->SetLinear_Solver_Iter(linMaxIter);
+  config->SetKind_Linear_Solver_Inner(kindSolverInner);
+
 }
 
 bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode) {

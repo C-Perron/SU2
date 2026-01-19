@@ -1809,14 +1809,10 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Use a Krylov solver instead a the fixed-point to solve discrete adjoint problem.*/
   addBoolOption("DISCADJ_KRYLOV", DiscAdjKrylov, false);
-  /* DESCRIPTION: Kind of Krylov solver used for the discrete adjoint problem. */
-  addEnumOption("DISCADJ_KRYLOV_SOLVER", KindDiscAdjKrylov, Linear_Solver_Map, FGMRES);
-  /* DESCRIPTION: Max number of the Krylov solver iteration before iterating the main solver. */
-  addUnsignedShortOption("DISCADJ_KRYLOV_ITER", DiscAdjKrylovIter, 10);
-  /* DESCRIPTION: Min error of the Krylov solver iteration before iterating the main solver. */
-  addDoubleOption("DISCADJ_KRYLOV_ERROR", DiscAdjKrylovError, 1e-6);
   /* DESCRIPTION: Whether to output the Krylov solver residual to the console.*/
   addBoolOption("DISCADJ_KRYLOV_MONITOR", DiscAdjKrylovMonitor, false);
+  /* DESCRIPTION: Number of smoothing iteration for the discrete adjoint krylov solver. */
+  addUnsignedShortOption("DISCADJ_KRYLOV_SMOOTH", DiscAdjKrylovSmooth, 0);
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
