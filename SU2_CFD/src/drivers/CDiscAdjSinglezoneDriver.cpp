@@ -260,10 +260,14 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
     AD::StartRecording();
 
+    AD::Push_TapePosition(); /// TAPE_START
+
     iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
   }
 
   /*--- Set the dependencies of the iteration ---*/
+
+  AD::Push_TapePosition(); /// TAPE_DIRECT_IN
 
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
                              INST_0, kind_recording);
@@ -280,9 +284,13 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
+  AD::Push_TapePosition(); /// TAPE_DIRECT_OUT
+
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
+
+  AD::Push_TapePosition(); /// TAPE_END
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
@@ -470,7 +478,7 @@ bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 
   /*--- Using the rhs vector, sett all adjoint solutions to zero ---*/
 
-  rhs = 0.0;
+  rhs.SetValZero();
   SetAllSolutions(ZONE_0, true, rhs);
 
   /*--- Initialize the adjoint variables with external terms only ---*/
@@ -483,7 +491,7 @@ bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 
   /*--- Compute adjoint ---*/
 
-  AD::ComputeAdjoint();
+  AD::ComputeAdjoint(TAPE_END, TAPE_DIRECT_IN);
 
   /*--- Extract the resulting adjoint solution ---*/
 
@@ -528,7 +536,9 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
   AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
   AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+
   LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+  LinSolver.SetMonitoringFrequency(1);
 
   /*--- Store the current adjoint solution as the initial guess ---*/
 
@@ -543,7 +553,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
       cout << "\nThe RHS of the adjoint problem is numerically 0.";
       cout << "\nThis implies that the adjoint variables are also 0.\n\n";
     }
-    AdjSol = 0.0;
+    AdjSol.SetValZero();
     SetAllSolutions(ZONE_0, true, AdjSol);
     return;
   }
@@ -641,9 +651,11 @@ bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode
   iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0, addExternal);
 
   if (KrylovMode) {
-    AD::ComputeAdjoint();
+    /*--- Partial tape evaluation ---*/
+    AD::ComputeAdjoint(TAPE_DIRECT_OUT, TAPE_DIRECT_IN);
   } else {
     SetAdjObjFunction();
+    /*--- Full tape evaluation ---*/
     AD::ComputeAdjoint();
   }
 
