@@ -596,6 +596,10 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 
   PrepareImplicitIteration(geometry, nullptr, config);
 
+  if (config->GetDiscAdjKrylov()) {
+    return;
+  }
+
   /*--- Solve or smooth the linear system. ---*/
 
   SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)

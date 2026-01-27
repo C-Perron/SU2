@@ -523,7 +523,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   const auto product = AdjointProductWrapper(this);
   const auto precon = IdentityPreconditioner();
 
-  CSysSolve<Scalar> LinSolver;
+  CSysSolve<Scalar> LinSolver, InnerSolver;
   CSysVector<Scalar> AdjRHS, AdjSol;
 
   AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
@@ -547,6 +547,39 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     SetAllSolutions(ZONE_0, true, AdjSol);
     return;
   }
+
+  /* TEST */
+
+  CPreconditioner<Scalar>* PrimalPreconditioner;
+  CSysMatrix<Scalar> CopiedJacobian;
+  CopiedJacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned long jPoint = 0; jPoint < nPoint; jPoint++) {
+      auto value = solver[FLOW_SOL]->Jacobian.GetBlock(iPoint, jPoint);
+
+      CopiedJacobian.SetBlock(iPoint, jPoint, value);
+    }
+  }
+
+  CopiedJacobian.TransposeInPlace();
+  auto PrimalJacobian = CSysMatrixVectorProduct<Scalar>(CopiedJacobian, geometry, config);
+
+  const auto kindPreconditioner = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
+  PrimalPreconditioner = CPreconditioner<Scalar>::Create(kindPreconditioner, CopiedJacobian, geometry, config);
+  PrimalPreconditioner->Build();
+
+  InnerSolver.SetxIsZero(true);
+
+  auto f = [&](const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+    /*--- Initialize to 0 to be safe. ---*/
+    v.SetValZero();
+    Scalar res{};
+
+    InnerSolver.BCGSTAB_LinSolver(u, v, PrimalJacobian, *PrimalPreconditioner, 0, 5,
+      res, false, config);
+  };
+  auto nested_prec = CAbstractPreconditioner<Scalar>(f);
 
   /*--- Perform fixed-point itration for iteration 0 ---*/
 
@@ -576,22 +609,22 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
     switch (kindSolver) {
       case BCGSTAB:
-        LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config);
         break;
       case FGMRES:
-        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config);
         break;
       case RESTARTED_FGMRES:
-        LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config);
         break;
       case FGCRODR:
-        LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
+        LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
         break;
       case SMOOTHER:
-        LinSolver.Smoother_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        LinSolver.Smoother_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config);
         break;
       default:
-        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, nested_prec, tol, linMaxIter, res, monitoring, config);
         break;
     }
 
@@ -623,6 +656,8 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   config->SetLinear_Solver_Error(linTol);
   config->SetLinear_Solver_Iter(linMaxIter);
   config->SetKind_Linear_Solver_Inner(kindSolverInner);
+
+  delete PrimalPreconditioner;
 
 }
 

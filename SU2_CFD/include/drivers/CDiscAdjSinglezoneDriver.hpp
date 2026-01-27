@@ -58,7 +58,6 @@ protected:
       driver->SetAllSolutions(ZONE_0, true, u);
       driver->Iterate(iInnerIter, true);
       driver->GetAllSolutions(ZONE_0, true, v);
-      v -= u;
       ++iInnerIter;
     }
   };

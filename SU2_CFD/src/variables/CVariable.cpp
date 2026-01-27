@@ -123,6 +123,11 @@ void CVariable::RegisterSolution(bool input) {
   RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
 }
 
+void CVariable::RegisterResidualOutput(unsigned long iPoint, unsigned long iVar, su2double& res) {
+  AD::RegisterOutput(res);
+  AD::SetIndex(AD_OutputIndex(iPoint, iVar), res);
+}
+
 void CVariable::RegisterSolution_time_n() {
   RegisterContainer(true, Solution_time_n);
 }

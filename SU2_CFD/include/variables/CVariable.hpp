@@ -2167,6 +2167,9 @@ public:
    */
   void RegisterSolution(bool input);
 
+  /* TODO: Add description*/
+  void RegisterResidualOutput(unsigned long iPoint, unsigned long iVar, su2double& res);
+
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */

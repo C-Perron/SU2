@@ -336,11 +336,24 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
-  /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
+  if (config->GetDiscAdjKrylov()) {
 
-  direct_solver->GetNodes()->RegisterSolution(false);
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+          direct_solver->GetNodes()->RegisterResidualOutput(iPoint, iVar, direct_solver->LinSysRes(iPoint, iVar));
+      }
+    }
+    END_SU2_OMP_FOR
 
-  direct_solver->RegisterSolutionExtra(false, config);
+  } else {
+
+    /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
+
+    direct_solver->GetNodes()->RegisterSolution(false);
+    direct_solver->RegisterSolutionExtra(false, config);
+
+  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(
