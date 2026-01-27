@@ -69,6 +69,16 @@ protected:
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
   };
 
+  /*!
+   * \brief Position markers within a tape.
+   */
+  enum Tape_Positions {
+    TAPE_START = 0,
+    TAPE_DIRECT_IN = 1,
+    TAPE_DIRECT_OUT = 2,
+    TAPE_END = 3,
+  };
+
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
   RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
