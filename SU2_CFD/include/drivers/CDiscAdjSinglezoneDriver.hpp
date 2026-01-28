@@ -153,7 +153,7 @@ protected:
    * \param[in] iInnerIter - Current inner iteration
    * \param[in] KrylovMode - Whether this is called from within a Krylov solver
    */
-  bool Iterate(unsigned long iInnerIter, bool KrylovMode);
+  void Iterate(unsigned long iInnerIter, bool KrylovMode);
 
 public:
 
