@@ -174,7 +174,13 @@ void CDiscAdjSinglezoneDriver::RunFixedPoint() {
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    StopCalc = Iterate(Adjoint_Iter, false);
+    Iterate(Adjoint_Iter, false);
+
+    /*--- Monitor progress/convergence ---*/
+
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container, surface_movement,
+                                  grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Output files for steady state simulations. ---*/
 
@@ -562,15 +568,26 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
   // Set adj solution to initial guess
   SetAllSolutions(ZONE_0, true, AdjSol);
+
   // Perform fixed-point
-  StopCalc = Iterate(0, false);
+  Iterate(0, false);
+
+  // Monitor convergence
+  solver[MainSolver]->SetIterLinSolver(0);
+  solver[MainSolver]->SetResLinSolver(1.0);
+  StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                solver_container, numerics_container, config_container, surface_movement,
+                                grid_movement, FFDBox, ZONE_0, INST_0);
+
   // Restore adj solution bc it was modified
   SetAllSolutions(ZONE_0, true, AdjSol);
+
   // Print initial residuals
   if (!config->GetTime_Domain()) {
     iteration->Output(output_container[ZONE_0], geometry_container, solver_container, config_container, 0,
                       false, ZONE_0, INST_0);
   }
+
   // Stop here if solution is already converged
   if (StopCalc) return;
 
@@ -580,28 +597,29 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
     /*--- Run Krylov solver to improve adjoint solution ---*/
 
+    unsigned long iter;
     Scalar res = 0.0;
     Scalar tol = SU2_TYPE::GetValue(linTol);
     bool monitoring = config->GetDiscAdjKrylovMonitor();
 
     switch (kindSolver) {
       case BCGSTAB:
-        LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        iter = LinSolver.BCGSTAB_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       case FGMRES:
-        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       case RESTARTED_FGMRES:
-        LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        iter = LinSolver.RFGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       case FGCRODR:
-        LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
+        iter = LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
         break;
       case SMOOTHER:
-        LinSolver.Smoother_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        iter = LinSolver.Smoother_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
       default:
-        LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
+        iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, linMaxIter, res, monitoring, config);
         break;
     }
 
@@ -611,7 +629,18 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
     /*--- Run a fixed-point iteration to compute the residuals ---*/
 
-    StopCalc = Iterate(Adjoint_Iter, false);
+    Iterate(Adjoint_Iter, false);
+
+    /*--- Overwrite LinSolver statistics with Krylov solver values*/
+
+    solver[MainSolver]->SetIterLinSolver(iter);
+    solver[MainSolver]->SetResLinSolver(res);
+
+    /*--- Monitor progress/convergence ---*/
+
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container, surface_movement,
+                                  grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Restore adjoint solution bc the fixed-point iteration modified it ---*/
 
@@ -636,7 +665,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
 
 }
 
-bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode) {
+void CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode) {
 
   config->SetInnerIter(iInnerIter);
   const bool addExternal = !KrylovMode;
@@ -663,11 +692,4 @@ bool CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode
 
   iteration->IterateDiscAdj(geometry_container, solver_container, config_container, ZONE_0, INST_0, false, KrylovMode);
 
-  /*--- Monitor the pseudo-time ---*/
-
-  if (KrylovMode) return false;
-
-  return iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container, solver_container,
-                            numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
-                            INST_0);
 }
