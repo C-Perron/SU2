@@ -342,12 +342,6 @@ class CFVMFlowSolverBase : public CSolver {
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
-   * iteration for stability.
-   */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config);
-
-  /*!
    * \brief General implementation to load a flow solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -1020,6 +1014,13 @@ class CFVMFlowSolverBase : public CSolver {
   ~CFVMFlowSolverBase();
 
  public:
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
+   * iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig* config) override;
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.

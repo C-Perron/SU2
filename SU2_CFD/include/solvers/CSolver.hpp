@@ -1433,6 +1433,13 @@ public:
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
 
   /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ComputeUnderRelaxationFactor(const CConfig *config) {}
+
+  /*!
    * \brief Reset the local CFL adaption variables
    */
   void ResetCFLAdapt();
