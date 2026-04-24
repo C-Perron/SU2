@@ -4384,6 +4384,11 @@ public:
   unsigned long GetLinear_Solver_Restart_Frequency(void) const { return Linear_Solver_Restart_Frequency; }
 
   /*!
+   * \brief Set restart frequency of the linear solver for the implicit formulation.
+   */
+  void SetLinear_Solver_Restart_Frequency(unsigned long freq) { Linear_Solver_Restart_Frequency = freq; } 
+
+  /*!
    * \brief Get the number of vectors used for deflated restarts.
    */
   unsigned long GetLinear_Solver_Restart_Deflation(void) const { return Linear_Solver_Restart_Deflation; }

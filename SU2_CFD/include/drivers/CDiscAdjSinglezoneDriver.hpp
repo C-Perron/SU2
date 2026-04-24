@@ -79,6 +79,18 @@ protected:
     TAPE_END = 3,
   };
 
+  /*!
+   * \brief Position markers within a tape.
+   */
+  struct LinSolverState {
+    unsigned short kindSolver;
+    su2double linTol;
+    unsigned short linMaxIter;
+    LINEAR_SOLVER_INNER kindSolverInner;
+    unsigned long restartIter;
+  };
+  LinSolverState savedLinSolverState;           /*!< \brief Saved state of linear solver, which is modified by Krylov solver. */
+
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
   RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
@@ -154,6 +166,10 @@ protected:
    * \param[in] KrylovMode - Whether this is called from within a Krylov solver
    */
   void Iterate(unsigned long iInnerIter, bool KrylovMode);
+
+  void SetKrylovSolverState(void);
+
+  void UnsetKrylovSolverState(void);
 
 public:
 
