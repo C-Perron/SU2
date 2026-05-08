@@ -38,6 +38,9 @@ jobs:
             flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Cache Object Files
         uses: actions/cache@v4
         with:
