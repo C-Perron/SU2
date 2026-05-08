@@ -71,11 +71,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Asset
+      - name: Replace Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ steps.release_drafter.outputs.tag_name }}
+          ASSET_NAME: SU2-${{ steps.release_drafter.outputs.tag_name }}-${{ matrix.os_bin }}.zip
         run: |
+          set -e
+
+          # Delete existing asset if present
+          EXISTING_ASSET_ID=$(gh release view "$TAG_NAME" \
+            --json assets \
+            --jq ".assets[] | select(.name == \"$ASSET_NAME\") | .id")
+
+          if [ -n "$EXISTING_ASSET_ID" ]; then
+            echo "Deleting existing asset: $ASSET_NAME"
+            gh api \
+              -X DELETE \
+              repos/${{ github.repository }}/releases/assets/$EXISTING_ASSET_ID
+          fi
+
+          # Upload new asset
           gh release upload "$TAG_NAME" \
-            "${{ matrix.os_bin }}.zip#SU2-${TAG_NAME}-${{ matrix.os_bin }}.zip" \
-            --clobber
+            "${{ matrix.os_bin }}.zip#$ASSET_NAME"
