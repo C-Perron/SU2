@@ -305,12 +305,15 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   SetObjFunction();
 
   AD::Push_TapePosition(); /// TAPE_END
+  
+  /*--- Extract the objective function and store it --- */
+  AD::StopRecording();
+
+  /*--- Print tape statistics (optional) --- */
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
   }
-
-  AD::StopRecording();
 
 }
 
