@@ -1236,8 +1236,10 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   /*--- Relaxation factor, see comments inside the loop over the smoothing iterations. ---*/
   const ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
+  /*--- If no iterations are performed, simply apply the preconditioner and exit. ---*/
   if (m < 1) {
-    SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
+    precond(b, x);
+    return 0;
   }
 
   /*--- Allocate vectors for residual (r), solution increment (z), and matrix-vector

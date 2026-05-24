@@ -136,6 +136,11 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
+  
+  /*--- Solving the discrete adjoint problem using a Krylov method requires to solver the flow using only linear operations.
+   *--- Therefore, we set the linear solver to SMOOTHER with a fixed number of iterations, among other changes.
+   *--- The original settings are restored during postprocessing. ---*/
+  if (config->GetDiscAdjKrylov()) SetKrylovSolverState();
 
   /*--- Preprocess the adjoint iteration ---*/
 
@@ -150,11 +155,6 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   if (RecordingState != MainVariables){
     MainRecording();
   }
-
-  /*--- Solving the discrete adjoint problem using a Krylov method requires the fixed-point
-   *--- iterator to only use linear operations. Therefore, we set the linear solver to SMOOTHER
-   *--- with a fixed number of iterations. The original settings are restored during postprocessing. ---*/
-  if (config->GetDiscAdjKrylov()) SetKrylovSolverState();
 
 }
 
@@ -400,23 +400,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
   SU2_ZONE_SCOPED
 
-  /*--- Simplify linear solver ---*/
-
-  /*--- The recording of one iteration of the direct problem does not require a full
-   *--- convergence of the linear solver. Therefore, we set the linear solver
-   *--- to a single smoother iteration. After the recording, the original settings
-   *--- are restored. ---*/
-
-  const auto kindSolver = config->GetKind_Linear_Solver();
-  const auto linTol = config->GetLinear_Solver_Error();
-  const auto linMaxIter = config->GetLinear_Solver_Iter();
-  const auto kindSolverInner = config->GetKind_Linear_Solver_Inner();
-
-  config->SetKind_Linear_Solver(SMOOTHER);
-  config->SetLinear_Solver_Error(0.0);
-  config->SetLinear_Solver_Iter(1);
-  config->SetKind_Linear_Solver_Inner(LINEAR_SOLVER_INNER::NONE);
-
   /*--- Mesh movement ---*/
 
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
@@ -436,13 +419,6 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
   /*--- Print the direct residual to screen ---*/
 
   PrintDirectResidual(kind_recording);
-
-  /*--- Restore linear solver settings ---*/
-
-  config->SetKind_Linear_Solver(kindSolver);
-  config->SetLinear_Solver_Error(linTol);
-  config->SetLinear_Solver_Iter(linMaxIter);
-  config->SetKind_Linear_Solver_Inner(kindSolverInner);
 
 }
 
@@ -608,7 +584,8 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     const auto monitoring = config->GetDiscAdjKrylovMonitor();
 
     if (config->GetLinear_Solver_Restart_Deflation() > 0)    {
-      iter = LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, maxIter, res, monitoring, config, FgcrodrMode::SAME_MAT);
+      iter = LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, maxIter, res, monitoring, config,
+                                         FgcrodrMode::SAME_MAT);
     }
     else {
       iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, maxIter, res, monitoring, config);
@@ -688,7 +665,7 @@ void CDiscAdjSinglezoneDriver::SetKrylovSolverState(void) {
   config->SetKind_Linear_Solver(SMOOTHER);
   config->SetLinear_Solver_Error(0.0);
   config->SetKind_Linear_Solver_Inner(LINEAR_SOLVER_INNER::NONE);
-  config->SetLinear_Solver_Iter(max(static_cast<unsigned short>(1), config->GetDiscAdjKrylovSmooth()));
+  config->SetLinear_Solver_Iter(config->GetDiscAdjKrylovSmooth());
   config->SetLinear_Solver_Restart_Frequency(savedLinSolverState.linMaxIter);
 
 }
