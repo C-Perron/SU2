@@ -155,12 +155,17 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINE
 
   if (size != SINGLE_NODE) {
     vector<unsigned short> essentialMarkers;
-    /*--- Markers types covered in SetBoundaryDisplacements. ---*/
+    /* All markers where the displacements are imposed are essential markers.
+     * This includes deforming boundaries, moving boundaries, and non-internal boundaries,
+     * the latter having a clamped boundary condition (i.e., zero displacements).
+     * This does not include deforming symmetry planes, as only one degree of freedom is restricted.
+     */
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) ||
-           (config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-           (config->GetMarker_All_Moving(iMarker) == YES)) {
+      if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+          (config->GetMarker_All_Moving(iMarker) == YES) ||
+          ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+           (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+           (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO))) {
         essentialMarkers.push_back(iMarker);
       }
     }
@@ -695,29 +700,23 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config,
 
   unsigned short iMarker;
 
-  /*--- Impose zero displacements of all non-moving surfaces that are not MARKER_DEFORM_SYM_PLANE. ---*/
+  /*--- First, set symmetry boundary conditions, which are non-essential markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
-        (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
-        (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
-
-      BC_Clamped(geometry, config, iMarker);
-    }
+    if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES)
+      BC_Sym_Plane(geometry, config, iMarker);
   }
 
-  /*--- Impose displacement boundary conditions and symmetry. ---*/
+  /*--- Second, set deforming and clamped condition, which are essential markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    /* --- Deforming or moving markers ---*/
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-        (config->GetMarker_All_Moving(iMarker) == YES)) {
-
+        (config->GetMarker_All_Moving(iMarker) == YES))
       BC_Deforming(geometry, config, iMarker, velocity_transfer);
-    }
-    else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
-
-      BC_Sym_Plane(geometry, config, iMarker);
-    }
+    /* --- Non-internal markers ---*/
+    else if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+             (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+             (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO)) 
+      BC_Clamped(geometry, config, iMarker);
   }
 
   /*--- Clamp far away nodes according to deform limit. ---*/
