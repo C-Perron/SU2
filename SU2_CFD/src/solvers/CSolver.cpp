@@ -4071,12 +4071,21 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
   SU2_ZONE_SCOPED
 
   const bool viscous_flow = config->GetViscous();
+  const bool QCR = config->GetSAParsedOptions().qcr2000;
   const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
+  const su2double Force_Ref = config->GetForce_Ref();
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as a wall ---*/
     if (!config->GetSolid_Wall(iMarker)) continue;
+
+    WALL_TYPE WallType;
+    su2double Roughness_Height;
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    // Get wall type for this marker (roughness height is superfluous)
+    tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
 
     // Loop over the vertices
     for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4097,22 +4106,37 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
 
         // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          auxForce[iDim] = -(Pn-Pressure_Inf)*Normal[iDim];
+          auxForce[iDim] = (Pressure_Inf - Pn) * Normal[iDim];
 
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
-          const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-          su2double Tau[3][3] = {{}};
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
+          su2double Tau[3][3] = {{0.0}};
+
+          // Get viscosity at the vertex
+          auto Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+
+          // If necessary, add the eddy viscosity (rough wall)
+          if (WallType == WALL_TYPE::ROUGH) Viscosity += base_nodes->GetEddyViscosity(iPoint);
+
+          // Evaluate velocity gradient
+          const auto Grad_Vel = base_nodes->GetVelocityGradient(iPoint);
+
+          // Evaluate Tau
+          CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
+
+          // If necessary, evaluate the QCR contribution to Tau
+          if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
+
+          // Project Tau in each surface element
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);
           }
         }
       }
 
-      // Redimensionalize the forces (Lref is 1, thus only Pref is needed).
+      // Redimensionalize the forces
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        VertexTraction[iMarker][iVertex][iDim] = config->GetPressure_Ref() * auxForce[iDim];
+        VertexTraction[iMarker][iVertex][iDim] = Force_Ref * auxForce[iDim];
       }
     }
   }
