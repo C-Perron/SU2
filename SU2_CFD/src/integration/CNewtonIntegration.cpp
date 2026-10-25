@@ -280,6 +280,15 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   }
   SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
 
+  unsigned short lineSearchIter = 10;
+
+  if (lineSearchIter > 0 && !startupPeriod) {
+    auto lineSearchSuccess = ExecuteLineSearch(linSysSol, lineSearchIter);
+    // Trigger a CFL adaptation if the line search fails
+    if (!lineSearchSuccess) eps = 1.0;
+    SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
+  }
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     solvers[FLOW_SOL]->SetIterLinSolver(iter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
@@ -296,6 +305,9 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /// TODO: Clever back-tracking and CFL adaptation based on residual reduction.
+
+  /// WIP: Line search
+
 
   /*--- Update solution. ---*/
 
@@ -393,4 +405,150 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
     CSysMatrixComms::Initiate(v, geometry, config);
     CSysMatrixComms::Complete(v, geometry, config);
   }
+}
+
+bool CNewtonIntegration::ExecuteLineSearch(CSysVector<Scalar>& linSysSol, unsigned short maxIter) {
+  unsigned short iIter;
+  bool success;
+  Scalar step = 1.0;
+  Scalar minStep = 1e-6;
+
+  // Compute the initial residual norm
+  lineSearchRes0 = LinSysRes.norm();
+
+  // Restrict the search direction based on the max allowable flow changes
+  RestrictLineSearch(linSysSol);
+
+  for (iIter = 0; iIter < maxIter; iIter++) {
+    success = IterateLineSearch(linSysSol, step);
+
+    cout << "LS: " << iIter << ", step: " << step << ", res: " << lineSearchRes / lineSearchRes0 << endl;
+
+    if (success || (step <= minStep)) break;
+
+    step = max(minStep, UpdateLineSearch(iIter, step));
+
+  }
+
+  // Report the result of the line search
+  if (!success) {
+    if (step <= minStep) {
+      cout << "Line search failed. Minimum step size reached." << endl;
+    }
+    else {
+      cout << "Line search failed. Maximum iterations reached" << endl;
+    }
+  }
+  else {
+    cout << "Line search successful." << endl;
+  }
+
+  // Skip update if the initial solution was adequate
+  if (iIter > 0) linSysSol *= step;
+
+  return success;
+
+}
+
+
+void CNewtonIntegration::RestrictLineSearch(CSysVector<Scalar>& linSysSol) {
+
+  // Update relaxation factors for the current solution
+  solvers[FLOW_SOL]->ComputeUnderRelaxationFactor(config);
+
+  // Find minimum relaxation factor across all points
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+    auto urf = solvers[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint);
+    for (auto iVar = 0ul; iVar < linSysSol.GetNVar(); ++iVar)
+      linSysSol(iPoint,iVar) *= urf;
+  }
+  END_SU2_OMP_FOR
+}
+
+bool CNewtonIntegration::IterateLineSearch(const CSysVector<Scalar>& direction, const Scalar& step) {
+
+  PerturbSolution(direction, step);
+  ComputeResiduals(ResEvalType::EXPLICIT);
+
+  // Sufficient decrease condition (Armijo–Goldstein)
+  Scalar alpha = 1e-4;
+
+  static su2double sq_res;
+  su2double sq_res_loc = 0.0;
+
+  SU2_OMP_MASTER
+  sq_res = 0.0;
+  END_SU2_OMP_MASTER
+
+  // Compute the residual at the perturbed solution
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+
+    Scalar delta = SU2_TYPE::GetValue(
+      (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
+      max(EPS, solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint))
+    );
+
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < LinSysRes0->GetNVar(); ++iVar) {
+      Scalar res_tmp = step * delta * direction(iPoint,iVar);
+      res_tmp += SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes(iPoint,iVar));
+
+      sq_res_loc += res_tmp * res_tmp;
+    }
+  }
+  END_SU2_OMP_FOR
+
+  atomicAdd(sq_res_loc, sq_res);
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    su2double t = sq_res;
+    SU2_MPI::Allreduce(&t, &sq_res, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    lineSearchRes = sqrt(SU2_TYPE::GetValue(sq_res));
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  // Check if the sufficient decrease condition is satisfied
+  return (lineSearchRes < ((1 - alpha * step) * lineSearchRes0));
+
+}
+
+Scalar CNewtonIntegration::UpdateLineSearch(const Scalar& iIter, const Scalar& step) {
+  Scalar maxFactor = 0.5; // Maximum reduction factor
+  Scalar minFactor = 0.1; // Minimum reduction factor
+
+  if (iIter == 0) {
+    stepOld = step; // Store the initial step size
+    lineSearchResOld = lineSearchRes; // Store the initial residual
+    return step * maxFactor; // Reduce step size by maxFactor on first iteration
+  }
+
+  // Three-point parabolic interpolation to estimate the next step size
+
+  Scalar ds10 = step;
+  Scalar dr10 = lineSearchRes - lineSearchRes0;
+
+  Scalar ds12 = step - stepOld;
+  Scalar dr12 = lineSearchRes - lineSearchResOld;  
+
+  Scalar num = ds10 * ds10 * dr12 - ds12 * ds12 * dr10;
+  Scalar den = ds10 * dr12 - ds12 * dr10;
+
+  // Check for division by zero
+  if (abs(den) < EPS) {
+    return step * maxFactor;
+  }
+
+  Scalar newStep = min(max(step - 0.5 * num / den, step * minFactor), step * maxFactor);
+
+  cout << step - 0.5 * num / den << endl;
+
+  // Update previous step and residual
+  stepOld = step;
+  lineSearchResOld = lineSearchRes;
+
+  return newStep;
+
 }

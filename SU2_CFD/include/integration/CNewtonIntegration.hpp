@@ -106,6 +106,9 @@ private:
   /*--- If possible the solution vector of the solver is re-used, otherwise this temporary is used. ---*/
   CSysVector<Scalar> LinSysSol;
 
+  /// WIP: Line search
+  Scalar lineSearchRes, stepOld, lineSearchResOld, lineSearchRes0;
+
   template<class T, su2enable_if<std::is_same<T,Scalar>::value> = 0>
   inline CSysVector<Scalar>& GetSolutionVec(CSysVector<T>& x) { return x; }
 
@@ -196,6 +199,16 @@ private:
    * \brief Compute the step size for finite differences.
    */
   void ComputeFinDiffStep();
+
+  /// WIP: Line search
+
+  bool ExecuteLineSearch(CSysVector<Scalar>& linSysSol, unsigned short maxIter);
+
+  void RestrictLineSearch(CSysVector<Scalar>& linSysSol);
+
+  bool IterateLineSearch(const CSysVector<Scalar>& direction, const Scalar& step);
+
+  Scalar UpdateLineSearch(const Scalar& iIter, const Scalar& step);
 
 public:
   /*!
