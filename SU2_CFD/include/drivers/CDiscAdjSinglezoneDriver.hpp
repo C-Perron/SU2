@@ -58,7 +58,7 @@ protected:
       driver->SetAllSolutions(ZONE_0, true, u);
       driver->Iterate(iInnerIter, true);
       driver->GetAllSolutions(ZONE_0, true, v);
-      v -= u;
+      // v -= u;
       ++iInnerIter;
     }
   };
@@ -67,6 +67,22 @@ protected:
   public:
     inline bool IsIdentity() const override { return true; }
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+  };
+
+  class SolverPreconditioner : public CPreconditioner<Scalar> {
+    protected:
+      CDiscAdjSinglezoneDriver* const driver;
+      mutable bool directCall = true;
+    public:
+      SolverPreconditioner(CDiscAdjSinglezoneDriver* d) : driver(d) {}
+      inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+        auto solver = driver->solver[FLOW_SOL];
+        // auto nIter = driver->config->GetLinear_Solver_Iter();
+        // driver->config->SetLinear_Solver_Iter(1);
+        solver->System.Solve_b(solver->Jacobian, u, v, driver->geometry, driver->config, directCall);
+        directCall = false;
+        // driver->config->SetLinear_Solver_Iter(nIter);
+      }
   };
 
   /*!
@@ -170,6 +186,24 @@ protected:
   void SetKrylovSolverState(void);
 
   void UnsetKrylovSolverState(void);
+
+  void DirectRunResidual(RECORDING kind_recording);
+
+  void DeformGeometry();
+
+  void UpdateFarfield();
+
+  void UpdateGeometry();
+
+  void UpdateObjective();
+
+  void UpdateStates();
+
+  void UpdateResiduals();
+
+  void UpdateTractions();
+
+  void SetWallNormalConstraint();
 
 public:
 

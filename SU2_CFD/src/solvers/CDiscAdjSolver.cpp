@@ -342,10 +342,17 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   SU2_ZONE_SCOPED
 
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; ++iVar) {
+      AD::RegisterOutput(direct_solver->LinSysRes(iPoint, iVar));
+    }
+  }
+  END_SU2_OMP_FOR
 
-  direct_solver->GetNodes()->RegisterSolution(false);
+  // direct_solver->GetNodes()->RegisterSolution(false);
 
-  direct_solver->RegisterSolutionExtra(false, config);
+  // direct_solver->RegisterSolutionExtra(false, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(
@@ -565,12 +572,14 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry* geometry, CConfig* config, boo
     }
 
     /*--- Set the adjoint values of the primal solution. ---*/
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      SU2_TYPE::SetDerivative(direct_solver->LinSysRes(iPoint, iVar), SU2_TYPE::GetValue(Solution[iVar]));
 
-    direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
+    // direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
   END_SU2_OMP_FOR
 
-  direct_solver->SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
+  // direct_solver->SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {

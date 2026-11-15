@@ -140,7 +140,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Solving the discrete adjoint problem using a Krylov method requires to solver the flow using only linear operations.
    *--- Therefore, we set the linear solver to SMOOTHER with a fixed number of iterations, among other changes.
    *--- The original settings are restored during postprocessing. ---*/
-  if (config->GetDiscAdjKrylov()) SetKrylovSolverState();
+  // if (config->GetDiscAdjKrylov()) SetKrylovSolverState();
 
   /*--- Preprocess the adjoint iteration ---*/
 
@@ -239,7 +239,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   }//switch
 
   /*--- Restore linear solver settings  ---*/
-  if (config->GetDiscAdjKrylov()) UnsetKrylovSolverState();
+  // if (config->GetDiscAdjKrylov()) UnsetKrylovSolverState();
 
 }
 
@@ -293,7 +293,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Do one iteration of the direct solver ---*/
 
-  DirectRun(kind_recording);
+  // DirectRun(kind_recording);
+  DirectRunResidual(kind_recording);
 
   /*--- Store the recording state ---*/
 
@@ -516,6 +517,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
   const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
   const auto product = AdjointProductWrapper(this);
   const auto precon = IdentityPreconditioner();
+  const auto solve_precon = SolverPreconditioner(this);
 
   CSysSolve<Scalar> LinSolver;
   CSysVector<Scalar> AdjRHS, AdjSol;
@@ -580,12 +582,11 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
     unsigned long iter;
     Scalar res = 0.0;
     const auto tol = SU2_TYPE::GetValue(savedLinSolverState.linTol);
-    const auto maxIter = savedLinSolverState.linMaxIter;
+    const auto maxIter = 100; // = savedLinSolverState.linMaxIter;
     const auto monitoring = config->GetDiscAdjKrylovMonitor();
 
     if (config->GetLinear_Solver_Restart_Deflation() > 0)    {
-      iter = LinSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, product, precon, tol, maxIter, res, monitoring, config,
-                                         FgcrodrMode::SAME_MAT);
+      iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, solve_precon, tol, maxIter, res, monitoring, config);
     }
     else {
       iter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, product, precon, tol, maxIter, res, monitoring, config);
@@ -621,6 +622,7 @@ void CDiscAdjSinglezoneDriver::RunKrylov() {
                         false, ZONE_0, INST_0);
     }
 
+    // break;
     if (StopCalc) break;
   }
 }
@@ -678,4 +680,160 @@ void CDiscAdjSinglezoneDriver::UnsetKrylovSolverState(void) {
   config->SetLinear_Solver_Iter(savedLinSolverState.linMaxIter);
   config->SetLinear_Solver_Restart_Frequency(savedLinSolverState.restartIter);
 
+}
+
+void CDiscAdjSinglezoneDriver::DirectRunResidual(RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
+
+  /*--- Deform the mesh. ---*/
+  DeformGeometry();
+
+  /*--- Pre-process the primal solver state. ---*/
+  UpdateFarfield();
+  UpdateGeometry();
+  UpdateStates();
+
+  /*--- Run the computation of the outputs of interest. ---*/
+  UpdateResiduals();
+  SetWallNormalConstraint();
+  UpdateTractions();
+  UpdateObjective();
+
+  /*--- Print the direct residual to screen. ---*/
+  PrintDirectResidual(kind_recording);
+}
+
+void CDiscAdjSinglezoneDriver::DeformGeometry() {
+  SU2_ZONE_SCOPED
+  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config,
+                                        SecondaryVariables);
+}
+
+void CDiscAdjSinglezoneDriver::UpdateFarfield() {
+  /*--- Update the primal far-field variables. ---*/
+
+  su2double Velocity_Ref = config->GetVelocity_Ref();
+  su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
+  su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
+  su2double Mach = config->GetMach();
+  su2double Temperature = config->GetTemperature_FreeStream();
+  su2double Gas_Constant = config->GetGas_Constant();
+  su2double Gamma = config->GetGamma();
+  su2double SoundSpeed = sqrt(Gamma * Gas_Constant * Temperature);
+
+  if (nDim == 2) {
+    config->GetVelocity_FreeStreamND()[0] = cos(Alpha) * Mach * SoundSpeed / Velocity_Ref;
+    config->GetVelocity_FreeStreamND()[1] = sin(Alpha) * Mach * SoundSpeed / Velocity_Ref;
+  }
+  if (nDim == 3) {
+    config->GetVelocity_FreeStreamND()[0] = cos(Alpha) * cos(Beta) * Mach * SoundSpeed / Velocity_Ref;
+    config->GetVelocity_FreeStreamND()[1] = sin(Beta) * Mach * SoundSpeed / Velocity_Ref;
+    config->GetVelocity_FreeStreamND()[2] = sin(Alpha) * cos(Beta) * Mach * SoundSpeed / Velocity_Ref;
+  }
+}
+
+void CDiscAdjSinglezoneDriver::UpdateGeometry() {
+  SU2_ZONE_SCOPED
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES);
+
+  geometry->SetControlVolume(config, UPDATE);
+  geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
+}
+
+void CDiscAdjSinglezoneDriver::UpdateObjective() {
+  SU2_ZONE_SCOPED
+
+  ObjFunc = 0.0;
+
+  /*--- Specific scalar objective functions ---*/
+  switch (config->GetKind_Solver()) {
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER:       case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
+
+      /*--- Surface based obj. function ---*/
+      direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
+                                      config->GetOuterIter(), config->GetInnerIter());
+      ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+      break;
+
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
+      direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
+                                      config->GetOuterIter(), config->GetInnerIter());
+      ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
+      break;
+
+    case MAIN_SOLVER::DISC_ADJ_FEM:
+      solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+
+      direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
+                                      config->GetOuterIter(), config->GetInnerIter());
+      ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
+      break;
+
+    default:
+      break;
+  }
+}
+
+void CDiscAdjSinglezoneDriver::UpdateStates() {
+  SU2_ZONE_SCOPED
+  /*--- Update the flow and turbulent conservative state variables, preparing for other updates. ---*/
+  direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container,
+                               numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
+                               INST_0);
+}
+
+void CDiscAdjSinglezoneDriver::UpdateResiduals() {
+  SU2_ZONE_SCOPED
+  /*--- Update the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) residuals and objective function (no
+   * system solve). ---*/
+  integration[FLOW_SOL]->ComputeResiduals(geometry_container, solver_container, numerics_container, config_container,
+                                          FLOW_SOL, ZONE_0, INST_0);
+}
+
+void CDiscAdjSinglezoneDriver::UpdateTractions() {
+  SU2_ZONE_SCOPED
+  /*--- Update the surface tractions. ---*/
+  direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container,
+                                numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
+                                INST_0);
+}
+
+void CDiscAdjSinglezoneDriver::SetWallNormalConstraint() {
+  SU2_ZONE_SCOPED
+  const unsigned short iVel = 1;
+
+  for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL &&
+        config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) continue;
+
+    for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      /*--- Get the unit normal. ---*/
+      const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      su2double UnitNormal[3] = {0.0};
+      const auto it = geometry->symmetryNormals[iMarker].find(iVertex);
+
+      if (it != geometry->symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+      } else {
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      }
+
+      /*--- Compute wall-normal momentum from the registered (unmodified) solution. ---*/
+      su2double vnMom = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        vnMom += solver[FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVel + iDim) * UnitNormal[iDim];
+
+      /*--- Add the constraint R_n = (ρv)·n into the currently zeroed normal slot. ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        solver[FLOW_SOL]->LinSysRes(iPoint, iVel + iDim) += vnMom * UnitNormal[iDim];
+    }
+  }
 }
