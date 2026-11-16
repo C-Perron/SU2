@@ -74,9 +74,10 @@ protected:
    */
   enum Tape_Positions {
     TAPE_START = 0,
-    TAPE_DIRECT_IN = 1,
-    TAPE_DIRECT_OUT = 2,
-    TAPE_END = 3,
+    TAPE_INPUTS = 1,
+    TAPE_SOLUTION_IN = 2,
+    TAPE_SOLUTION_OUT = 3,
+    TAPE_END = 4,
   };
 
   /*!

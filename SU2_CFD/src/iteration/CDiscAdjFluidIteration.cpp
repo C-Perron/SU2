@@ -407,7 +407,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
       kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
       kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
       kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH ||
-      kind_recording == RECORDING::SOLUTION_AND_MESH) {
+      kind_recording == RECORDING::SOLUTION_AND_MESH ||
+      kind_recording == RECORDING::SOLUTION_AND_DEFORM
+    ) {
 
     /*--- Register flow and turbulent variables as input ---*/
 

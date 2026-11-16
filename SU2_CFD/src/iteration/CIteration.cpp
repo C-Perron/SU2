@@ -189,7 +189,11 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
   /*--- Perform the elasticity mesh movement ---*/
 
   bool wasActive = false;
-  if ((kind_recording != RECORDING::MESH_DEFORM) && !config->GetMultizone_Problem()) {
+  if (
+    kind_recording != RECORDING::MESH_DEFORM &&
+    kind_recording != RECORDING::SOLUTION_AND_DEFORM &&
+    !config->GetMultizone_Problem()
+  ) {
     /*--- In a primal run, AD::TapeActive returns a false ---*/
     /*--- In any other recordings, the tape is passive during the deformation. ---*/
     wasActive = AD::BeginPassive();

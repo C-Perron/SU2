@@ -176,7 +176,11 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
-  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
+  if (
+    kind_recording == RECORDING::SOLUTION_VARIABLES ||
+    kind_recording == RECORDING::SOLUTION_AND_MESH ||
+    kind_recording == RECORDING::SOLUTION_AND_DEFORM
+  ) {
     /*--- Register flow and turbulent variables as input ---*/
 
     solvers0[ADJHEAT_SOL]->RegisterSolution(geometry0, config[iZone]);

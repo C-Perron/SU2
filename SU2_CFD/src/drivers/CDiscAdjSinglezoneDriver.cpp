@@ -75,7 +75,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     if (config->GetDeform_Mesh()) {
-      SecondaryVariables = RECORDING::MESH_DEFORM;
+      // SecondaryVariables = RECORDING::MESH_DEFORM;
+      MainVariables = RECORDING::SOLUTION_AND_DEFORM;
+      SecondaryVariables = RECORDING::SOLUTION_AND_DEFORM;
     }
     else { SecondaryVariables = RECORDING::MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
@@ -152,9 +154,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
    *--- we only have to record if the current recording is different from the main variables. ---*/
 
-  if (RecordingState != MainVariables){
-    MainRecording();
-  }
+  MainRecording();
 
 }
 
@@ -246,6 +246,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   SU2_ZONE_SCOPED
 
+  /*--- Store the recording state ---*/
+
+  RecordingState = kind_recording;
+
   AD::Reset();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
@@ -275,18 +279,21 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*---Enable recording and register input of the iteration --- */
 
-  if (kind_recording != RECORDING::CLEAR_INDICES){
+  if (kind_recording != RECORDING::CLEAR_INDICES) AD::StartRecording();
 
-    AD::StartRecording();
+  AD::Push_TapePosition(); /// TAPE_START
+  
+  /*--- Mesh movement ---*/
 
-    AD::Push_TapePosition(); /// TAPE_START
-
-    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
-  }
+  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+  
+  AD::Push_TapePosition(); /// TAPE_INPUTS
+  
+  iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
   /*--- Set the dependencies of the iteration ---*/
 
-  AD::Push_TapePosition(); /// TAPE_DIRECT_IN
+  AD::Push_TapePosition(); /// TAPE_SOLUTION_IN
 
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
                              INST_0, kind_recording);
@@ -295,15 +302,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   DirectRun(kind_recording);
 
-  /*--- Store the recording state ---*/
-
-  RecordingState = kind_recording;
-
   /*--- Register Output of the iteration ---*/
 
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-  AD::Push_TapePosition(); /// TAPE_DIRECT_OUT
+  AD::Push_TapePosition(); /// TAPE_SOLUTION_OUT
 
   /*--- Extract the objective function and store it --- */
 
@@ -402,7 +405,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Mesh movement ---*/
 
-  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+  // direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
 
   /*--- Zone preprocessing ---*/
 
@@ -427,7 +430,8 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::CLEAR_INDICES);
+   if (RecordingState != RECORDING::CLEAR_INDICES)
+    SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the solution variables as input. ---*/
 
@@ -437,14 +441,23 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   SU2_ZONE_SCOPED
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
-   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+  
+  if (RecordingState != SecondaryVariables) {
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+     *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+    SetRecording(RECORDING::CLEAR_INDICES);
 
-  SetRecording(RECORDING::CLEAR_INDICES);
+    /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+    SetRecording(SecondaryVariables);
 
-  /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+  } else {
+    AD::ClearAdjoints();
+    if (rank == MASTER_NODE) {
+      cout << "\n-------------------------------------------------------------------------\n";
+      cout << "Computing the geometrical sensitivities\n";
+    }
+  }
 
-  SetRecording(SecondaryVariables);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
@@ -457,7 +470,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-  AD::ComputeAdjoint();
+  AD::ComputeAdjoint(TAPE_END, TAPE_START);
 
   /*--- Extract the computed sensitivity values. ---*/
 
@@ -467,10 +480,6 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   else { // MESH_DEFORM
     solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
   }
-
-  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-  AD::ClearAdjoints();
 
 }
 
@@ -494,7 +503,7 @@ bool CDiscAdjSinglezoneDriver::GetAdjointRHS(CSysVector<Scalar>& rhs) {
 
   /*--- Compute adjoint ---*/
 
-  AD::ComputeAdjoint(TAPE_END, TAPE_DIRECT_IN);
+  AD::ComputeAdjoint(TAPE_END, TAPE_SOLUTION_IN);
 
   /*--- Extract the resulting adjoint solution ---*/
 
@@ -641,11 +650,11 @@ void CDiscAdjSinglezoneDriver::Iterate(unsigned long iInnerIter, bool KrylovMode
 
   if (KrylovMode) {
     /*--- Partial tape evaluation ---*/
-    AD::ComputeAdjoint(TAPE_DIRECT_OUT, TAPE_DIRECT_IN);
+    AD::ComputeAdjoint(TAPE_SOLUTION_OUT, TAPE_SOLUTION_IN);
   } else {
     SetAdjObjFunction();
     /*--- Full tape evaluation ---*/
-    AD::ComputeAdjoint();
+    AD::ComputeAdjoint(TAPE_END, TAPE_INPUTS);
   }
 
   /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
